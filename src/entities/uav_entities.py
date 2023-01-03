@@ -218,7 +218,8 @@ class Depot(Entity):
                     drone.routing_algorithm.feedback(current_drone,
                                                      pck.event_ref.identifier,
                                                      delivery_delay,
-                                                     feedback)
+                                                     feedback,
+                                                     100)
             #print(f"DEPOT -> Drone {current_drone.identifier} packet: {pck.event_ref} total packets in sim: {len(self.simulator.metrics.drones_packets_to_depot)}")
 
             # add metrics: all the packets notified to the depot
@@ -283,6 +284,7 @@ class Drone(Entity):
                 to_remove_packets += 1
 
                 if self.simulator.routing_algorithm.name not in "GEO" "RND" "GEOS":
+                    
 
                     feedback = -1
                     current_drone = self
@@ -291,7 +293,8 @@ class Drone(Entity):
                         drone.routing_algorithm.feedback(current_drone,
                                                          pck.event_ref.identifier,
                                                          self.simulator.event_duration,
-                                                         feedback)
+                                                         feedback,
+                                                         -100) # Todo: check this
         self.__buffer = tmp_buffer
 
         if self.buffer_length() == 0:
