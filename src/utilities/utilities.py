@@ -8,9 +8,15 @@ import json
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from numpy import random
 import pickle
 from ast import literal_eval as make_tuple
 from src.utilities import random_waypoint_generation
+
+
+random.seed(42)
+def sample_gaussian(mean = 0, variance = 1):
+    return random.normal(mean, variance)
 
 
 def compute_circle_path(radius: int, center: tuple) -> list:

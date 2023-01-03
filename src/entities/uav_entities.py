@@ -177,7 +177,7 @@ class ACKPacket(Packet):
 class HelloPacket(Packet):
     """ The hello message is responsible to give info about neighborhood """
 
-    def __init__(self, src_drone, time_step_creation, simulator, cur_pos, speed, next_target):
+    def __init__(self, src_drone, time_step_creation, simulator, cur_pos, speed, next_target, energy, mobility, queue_delay, learning_rate, q-value):
         super().__init__(time_step_creation, simulator, None)
         self.cur_pos = cur_pos
         self.speed = speed
@@ -233,11 +233,11 @@ class Drone(Entity):
 
         self.depot = depot
         self.path = path
-        self.speed = self.simulator.drone_speed
+        self.speed = self.simulator.drone_speed + utilities.sample_gaussian()
         self.sensing_range = self.simulator.drone_sen_range
         self.communication_range = self.simulator.drone_com_range
         self.buffer_max_size = self.simulator.drone_max_buffer_size
-        self.residual_energy = self.simulator.drone_max_energy
+        self.residual_energy = self.simulator.drone_max_energy + utilities.sample_gaussian(0, 1000)
         self.come_back_to_mission = False  # if i'm coming back to my applicative mission
         self.last_move_routing = False  # if in the last step i was moving to depot
 
