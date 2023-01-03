@@ -81,7 +81,7 @@ class QFanet(BASE_routing):
         drone_position = self.drone.coords
         
         distances = np.asarray([utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(neighbor.coords, depot_position) for _, neighbor in opt_neighbors])  # check whether the current drone is the closest to the depot
-        if np.all(distances > 0):
+        if np.all(distances < 0):
             # QMR submodule
             # I am a minimum
             delays = [self.get_delay(self.drone, neighbor, packet) for _, neighbor in opt_neighbors]
