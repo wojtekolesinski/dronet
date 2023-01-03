@@ -2,13 +2,12 @@ from src.routing_algorithms.BASE_routing import BASE_routing
 from src.utilities import utilities as util
 import numpy as np
 import sys
-import utilities.utilities as utilities
 
 class QFanet(BASE_routing):
 
     def __init__(self, drone, simulator):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
-        self.sigma = 0.1
+        self.sigma = 0.3
         self.taken_actions = {}  # id event : (old_state, old_action)
         self.lr = 0.2 # to tune
         self.look_back = 10 # to tune
@@ -16,6 +15,7 @@ class QFanet(BASE_routing):
         self.weights /= np.sum(self.weights, dtype=np.float64)
         self.qtable = np.zeros(shape=(simulator.n_drones))
         self.rewards_history = np.zeros(shape=(simulator.n_drones, self.look_back))
+        # self.weights_history = np.zeros(shape=(simulator.n_drones, self.look_back))
 
 
     def feedback(self, drone, id_event, delay, outcome, reward):
@@ -57,22 +57,6 @@ class QFanet(BASE_routing):
             self.rewards_history[action, :] = raw_slice
 
 
-    def get_delay(self, d_1, d_2, packet):
-        drone_position = d_1.cur_pos
-        neighbor_position = d_1.cur_pos
-        wave_speed = 299337984 # m/s
-        # for each neighbor I divide the difference in distance to the depot by the transmission time
-        packet_size =  sys.getsizeof(packet)
-        my_position = np.asarray(self.drone.cur_pos)
-        distance = utilities.euclidean_distance(drone_position, neighbor_position)
-        
-        # consider transmission and propagation delay
-        transmission_delay = packet_size / d_1.transmission_rate
-        propagation_delay = distance / wave_speed
-
-        return transmission_delay + propagation_delay
-
-
 
     def relay_selection(self, opt_neighbors: list, packet):
         """
@@ -84,16 +68,12 @@ class QFanet(BASE_routing):
         # get velocity constraints: 
         #     the constraint necessary to obtain the minimum delay between hops.
         #     pag. 8 of q-fanet
-        depot_position = self.simulator.depot.coords
-        drone_position = self.drone.cur_pos
-
-        distances = [utilities.euclidean_distance(neighbor_drone.coords, ) for _, neighbor_drone in opt_neighbors]
+        depot_position = np.asarray(self.simulator.depot.coords)
+        wave_speed = 299337984 # m/s
+        # for each neighbor I divide the difference in distance to the depot by the transmission time
 
         
-        delays = [self.get_delay(self.drone, neighbor, packet) for _, neighbor in opt_neighbors]
 
-        neighbor_speed = np.asarray([(utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(neighbor_drone.coords, depot_position)) / (delays[idx]) for idx, (_, neighbor_drone) in enumerate(opt_neighbors)])
-
-        positive_speed_idx = np.where(neighbor_speed > 0)[0]
+        nieghbor_speed = [(np.linalg.norm(np.asarray(self.drone.cur_pos, depot_position)) - np.linalg.norm(np.asarray(neighbor_drone.cur_pos), depot_position)) / ( () / wave_speed) for _, neighbor_drone in opt_neighbors]
 
         return None  # here you should return a drone object!

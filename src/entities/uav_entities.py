@@ -177,12 +177,15 @@ class ACKPacket(Packet):
 class HelloPacket(Packet):
     """ The hello message is responsible to give info about neighborhood """
 
-    def __init__(self, src_drone, time_step_creation, simulator, cur_pos, speed, next_target, energy, mobility, queue_delay, learning_rate, q-value):
+    def __init__(self, src_drone, time_step_creation, simulator, cur_pos, speed, next_target, energy, queue_delay, learning_rate):
         super().__init__(time_step_creation, simulator, None)
         self.cur_pos = cur_pos
         self.speed = speed
         self.next_target = next_target
         self.src_drone = src_drone  # Don't use this
+        self.energy = energy
+        self.queue_delay = queue_delay
+        self.learning_rate = learning_rate
 
 
 # ------------------ Depot ----------------------
@@ -240,6 +243,7 @@ class Drone(Entity):
         self.residual_energy = self.simulator.drone_max_energy + utilities.sample_gaussian(0, 1000)
         self.come_back_to_mission = False  # if i'm coming back to my applicative mission
         self.last_move_routing = False  # if in the last step i was moving to depot
+        self.transmission_rate = 2e5 + utilities.sample_gaussian(0, 1e3) # 20_000 per sec.
 
         # dynamic parameters
         self.tightest_event_deadline = None  # used later to check if there is an event that is about to expire
