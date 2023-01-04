@@ -46,7 +46,7 @@ class QFanet(BASE_routing):
             raw_slice = np.roll(raw_slice, 1)
             raw_slice[0] = reward
             self.rewards_history[action, :] = raw_slice
-            print(f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}", "\nDrone:", self.drone.identifier,"\nSlice:", raw_slice, "\nQtable:", self.qtable)
+            print(f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}" "\nDrone:", self.drone.identifier,"\nSlice:", raw_slice, "\nQtable:", self.qtable)
 
 
     def get_delay(self, d_1, d_2, packet):
