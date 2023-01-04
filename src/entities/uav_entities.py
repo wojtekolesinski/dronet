@@ -219,7 +219,7 @@ class Depot(Entity):
                                                      pck.event_ref.identifier,
                                                      delivery_delay,
                                                      feedback,
-                                                     100)
+                                                     100) # added this 100 for the q-fanet algorithm
             #print(f"DEPOT -> Drone {current_drone.identifier} packet: {pck.event_ref} total packets in sim: {len(self.simulator.metrics.drones_packets_to_depot)}")
 
             # add metrics: all the packets notified to the depot
@@ -294,7 +294,7 @@ class Drone(Entity):
                                                          pck.event_ref.identifier,
                                                          self.simulator.event_duration,
                                                          feedback,
-                                                         -100) # Todo: check this
+                                                         -100) # added this -100 for the q-fanet algorithm
         self.__buffer = tmp_buffer
 
         if self.buffer_length() == 0:

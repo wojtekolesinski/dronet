@@ -12,7 +12,7 @@ class QFanet(BASE_routing):
         self.taken_actions = {}  # id event : (old_state, old_action)
         self.lr = 0.6 # to tune
         self.look_back = 10 # to tune
-        self.weights = np.asarray([i for i in range(self.look_back)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
+        self.weights = np.asarray([1 for i in range(self.look_back)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
         self.weights /= np.sum(self.weights, dtype=np.float64)
         self.qtable = np.zeros(shape=(simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(simulator.n_drones, self.look_back))
@@ -33,8 +33,6 @@ class QFanet(BASE_routing):
         # feedback for the same packet!!
 
         if id_event in self.taken_actions:
-            # Drone id and Taken actions
-            print(f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}")
 
             # take the old action
             state, action = self.taken_actions[id_event]
@@ -48,7 +46,7 @@ class QFanet(BASE_routing):
             raw_slice = np.roll(raw_slice, 1)
             raw_slice[0] = reward
             self.rewards_history[action, :] = raw_slice
-            print("Drone:", self.drone.identifier,"\nSlice:", raw_slice, "\nQtable:", self.qtable)
+            print(f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}", "\nDrone:", self.drone.identifier,"\nSlice:", raw_slice, "\nQtable:", self.qtable)
 
 
     def get_delay(self, d_1, d_2, packet):
@@ -89,7 +87,8 @@ class QFanet(BASE_routing):
             neighbor_speed = np.asarray([(utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(neighbor_drone.coords, depot_position)) / (delays[idx]) for idx, (_, neighbor_drone) in enumerate(opt_neighbors)])
 
             positive_speed_idx = np.where(neighbor_speed > 0)[0]
-            if positive_speed_idx.shape[0] <= 0:
+            print("neighbor speed:", neighbor_speed, "positive speed:", positive_speed_idx)
+            if len(positive_speed_idx) <= 0:
                 # penalty mechanism: bad reward
                 for drone in self.simulator.drones:
                         delivery_delay = self.simulator.cur_step - packet.event_ref.current_time
@@ -116,7 +115,6 @@ class QFanet(BASE_routing):
                 # random choice
                 action = self.simulator.rnd_routing.randint(0, len(opt_neighbors))
                 self.taken_actions[packet.event_ref.identifier] = (None, opt_neighbors[action][1].identifier)
-                print("Random action:", action)
                 return opt_neighbors[action][1]
             else:
                 # choose the maximum based on the q_table
@@ -131,9 +129,7 @@ class QFanet(BASE_routing):
                 neighbors_idx = [d.identifier for _, d in opt_neighbors]
                 q_values = self.qtable[neighbors_idx]
                 action = np.argmax(q_values)
-                print("Neighbors:", neighbors_idx, "Qtable action:", neighbors_idx[action])
                 self.taken_actions[packet.event_ref.identifier] = (None, neighbors_idx[action])
                 return opt_neighbors[action][1]
         # calculate mean of 
         
-        return None  # here you should return a drone object!
