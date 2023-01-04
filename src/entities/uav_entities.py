@@ -242,6 +242,7 @@ class Drone(Entity):
         self.communication_range = self.simulator.drone_com_range
         self.buffer_max_size = self.simulator.drone_max_buffer_size
         self.residual_energy = self.simulator.drone_max_energy + utilities.sample_gaussian(0, 1000)
+        self.initial_energy = self.residual_energy
         self.come_back_to_mission = False  # if i'm coming back to my applicative mission
         self.last_move_routing = False  # if in the last step i was moving to depot
         self.transmission_rate = 2e5 + utilities.sample_gaussian(0, 1e3) # 20_000 per sec.

@@ -3,6 +3,7 @@ from src.routing_algorithms.georouting import GeoRouting
 from src.routing_algorithms.q_learning_routing import QLearningRouting
 from src.routing_algorithms.random_routing import RandomRouting
 from src.routing_algorithms.q_fanet import QFanet
+# from src.routing_algorithms.QMR_routing import QMR
 from enum import Enum
 
 
@@ -78,7 +79,7 @@ DRONE_MAX_ENERGY = 1000000           # int: max energy of a drone.
 
 # depot
 DEPOT_COMMUNICATION_RANGE = 150  # float: meters, communication range of the depot.
-DEPOT_COO = (750, 0)             # (float, float): coordinates of the depot.
+DEPOT_COO = (ENV_WIDTH // 2, 0)             # (float, float): coordinates of the depot.
 
 
 # ------------------------------- ROUTING PARAMS. ------------------------------- #
@@ -87,6 +88,7 @@ class RoutingAlgorithm(Enum):
     RND = RandomRouting
     QL = QLearningRouting
     Q_FANET = QFanet
+    # QMR = QMR
 
     @staticmethod
     def keylist():
