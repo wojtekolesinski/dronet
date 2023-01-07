@@ -93,11 +93,13 @@ class QMR(BASE_routing):
         
             #select the neighbor with the largest k-weigthed Q-value
             for neighbor in candidate_neighbors:
+                t3 = t2 + self.get_delay(self.drone, neighbor)
                 d_iD = utilities.euclidean_distance(drone_position, depot_position)
                 deadline_i = 1 # to be defined
                 V_i = d_iD / deadline_i
-                angle_j = math.atan2(neighbor.coords,neighbor.nex)
+                angle_j = math.atan2(neighbor.coords,neighbor.next_target.coords)
                 predicted_x = neighbor.coords[0] + neighbor.speed * math.cos(angle_j) * (t3-t1)
+                predicted_y = neighbor.coords[1] + neighbor.speed * math.sin(angle_j) * (t3-t1)
                 d_ij = math.sqrt((math.pow2()))
             d_ij = 
             M_ij = 0 if 
