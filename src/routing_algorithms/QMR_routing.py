@@ -34,9 +34,15 @@ class QMR(BASE_routing):
         @return:
         """
 
+        # Read this
 
-        # Be aware, due to network errors we can give the same event to multiple drones and receive multiple
-        # feedback for the same packet!!
+        # During the feedback function, we have to calculate the adaptive learning rate and the adaptive discount factor.
+        # In order to do this, we need:
+        # - energy of the that is sending the feedback drone (j). This must be passed as parameter of the feedback function
+        # - the hop_delay between drone i and drone j. We can calculate this measure if we know the link
+        # - the normalized onehop delay for the link. We can easily calculate it if we know the link (aka the action).
+        # - the learning rate: we need the one hop delay calculated before
+        # - the discount factor: we need the list of neighbors at time t-1 and the current neighbors.
 
         if id_event in self.taken_actions:
             
@@ -80,6 +86,7 @@ class QMR(BASE_routing):
 
 
     def get_delay(self, d_1, d_2, packet):
+        # this is not the same delay as the paper because we don't have access to the queue delay.
         drone_position = d_1.coords
         neighbor_position = d_2.coords
         wave_speed = 299337984 # m/s
