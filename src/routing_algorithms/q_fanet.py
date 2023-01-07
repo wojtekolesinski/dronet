@@ -57,13 +57,14 @@ class QFanet(BASE_routing):
         neighbor_position = d_2.coords
         wave_speed = 299337984 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
-        packet_size =  sys.getsizeof(packet)
+        packet_size =  sys.getsizeof(packet) * 8
         distance = utilities.euclidean_distance(drone_position, neighbor_position)
         
         # consider transmission and propagation delay
         transmission_delay = packet_size / d_1.transmission_rate
         propagation_delay = distance / wave_speed
 
+        print("delay:", transmission_delay + propagation_delay)
         return transmission_delay + propagation_delay
 
 
