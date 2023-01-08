@@ -13,7 +13,9 @@ To aggregate data you can use also external libraries such as Pandas!
 
 IMPORTANT: Both averages and stds must be computed over different seeds for the same metric!
 """
-
+import os 
+import pandas as pd
+import json
 
 def compute_data_avg_std(path: str):
     """
@@ -21,9 +23,23 @@ def compute_data_avg_std(path: str):
     @param path: results folder path
     @return: one or more data structure containing data
     """
+    data = {}
+    for i in range(31):
+        data[i] = {}
+    # You can use the following code to parse the JSON file names
+    for file in os.listdir(path):
+        if file.endswith(".json") and file.startswith("simulation"):
+            file_name = file.split("_")
+            seed = int(file_name[2])
+            drones_number = int(file_name[3])
+            routing_algorithm = file_name[4].split(".")[0]
 
-    # TODO: Implement your code HERE
-
+            f = open(path + "/" + file)
+            json1 = json.load(f)
+            data[seed][drones_number] = json1["mean_number_of_relays"]
+            f.close()
+    print(data)
+    return routing_algorithm, data
     pass
 
 

@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from src.experiments.json_and_plot import ALL_SIZE
 from src.plots.config import PLOT_DICT, LABEL_SIZE, LEGEND_SIZE
+from src.plots.data.data_elaboration import compute_data_avg_std
 
 
 def plot(algorithm: list,
@@ -94,8 +95,8 @@ if __name__ == "__main__":
 
     # you can call the compute_data_avg_std in data_elaboration function here to get all the data you need
     # in this example that function is "approximated" using np.linspace()
-
-    algorithm = "algo_1"
+    
+    algorithm,data = compute_data_avg_std("data/evaluation_tests")
     y_data = np.linspace(0, 10, 5)
     y_data_std = np.linspace(0, 1, 5)
     type = "metric_1"
