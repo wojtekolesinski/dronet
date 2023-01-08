@@ -53,7 +53,8 @@ class QMR(BASE_routing):
 
 
             # calculate normalized one hop delay   formula 4
-            normalized_one_hop_delay, variance = self.get_normalized_one_hop_delay(action, hop_delay, roll=False)
+            self.add_delay_to_history(drone.identifier, hop_delay)
+            normalized_one_hop_delay, variance = self.get_normalized_one_hop_delay(action, hop_delay)
 
             # calculate adaptive learning rate   formula 5
             adaptive_lr =1 - np.exp(normalized_one_hop_delay) if variance!= 0 else 0.3
@@ -94,16 +95,17 @@ class QMR(BASE_routing):
 
         return transmission_delay + propagation_delay
 
-    def get_normalized_one_hop_delay(self, hop, delay, roll = True):
-        if roll:
-            history = np.roll(history, 1)
-            history[0] = delay
-            self.delay_history[hop, :] = history
+    def get_normalized_one_hop_delay(self, hop, delay):
         # get the one hop delay based on the history.
         history = self.delay_history[hop]
         var = np.var(history)
         one_hop_delay = (delay - np.mean(history)) / var
         return one_hop_delay, var
+    
+    def add_delay_to_history(self, drone_id, delay):
+        history = np.roll(history, 1)
+        history[0] = delay
+        self.delay_history[drone_id, :] = history
 
 
 
@@ -121,7 +123,7 @@ class QMR(BASE_routing):
         depot_position = self.simulator.depot.coords
         drone_position = self.drone.coords
         
-        distances = np.asarray([utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(neighbor.coords, depot_position) for _, neighbor in opt_neighbors])  # check whether the current drone is the closest to the depot
+        distances = np.asarray([utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(hp.cur_pos, depot_position) for hp, n in opt_neighbors])  # check whether the current drone is the closest to the depot
         candidate_neighbors = np.asarray(opt_neighbors)[np.where(distances < 0)[0]]
         hello_packets = candidate_neighbors[:,0]
         
@@ -189,7 +191,7 @@ class QMR(BASE_routing):
             E_i = self.drone.residual_energy / self.drone.initial_energy
             delivery_delay = self.simulator.cur_step - packet.time_step_creation
             for drone in self.simulator.drones:
-                delay = self.get_delay(self.drone, drone)
+                delay = delays[action]
                 drone.routing_algorithm.feedback(self.drone,
                                                             packet.event_ref.identifier,
                                                             delivery_delay,
@@ -198,9 +200,14 @@ class QMR(BASE_routing):
                                                             E_i,
                                                             delay)         # self, drone, id_event, delay, outcome, reward, E_i, hop_delay
 
+            for idx, (hp, drone) in enumerate(opt_neighbors):
+                self.add_delay_to_history(drone.identifier, delays[idx])
+
         
         else:
             # No candidate neighbor: Y
+            #if there are neighbors whose actual velocity is greater than 0
+            actual_velocities
             pass
             
         if action is not None:
