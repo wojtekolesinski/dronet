@@ -3,7 +3,7 @@ from src.routing_algorithms.georouting import GeoRouting
 from src.routing_algorithms.q_learning_routing import QLearningRouting
 from src.routing_algorithms.random_routing import RandomRouting
 from src.routing_algorithms.q_fanet import QFanet
-# from src.routing_algorithms.QMR_routing import QMR
+from src.routing_algorithms.QMR_routing import QMR
 from enum import Enum
 
 
@@ -55,7 +55,7 @@ SAVE_PLOT_DIR = "data/plots/"
 # add constants here...
 
 # ----------------------------- SIMULATION PARAMS. ---------------------------- #
-SIM_DURATION = 18000   # int: steps of simulation. # ***
+SIM_DURATION = 60000   # int: steps of simulation. # ***
 TS_DURATION = 0.150   # float: seconds duration of a step in seconds.
 SEED = 10  # int: seed of this simulation.
 
@@ -73,7 +73,7 @@ P_FEEL_EVENT = .8       # float: probability that the drones feels the event gen
 # drones
 COMMUNICATION_RANGE_DRONE = 150  # float: meters, communication range of the drones.
 SENSING_RANGE_DRONE = 0        # float: meters, the sensing range of the drones.
-DRONE_SPEED = 8                  # float: m/s, drone speed.
+DRONE_SPEED = 8                 # float: m/s, drone speed.
 DRONE_MAX_BUFFER_SIZE = 10000     # int: max number of packets in the buffer of a drone.
 DRONE_MAX_ENERGY = 1000000           # int: max energy of a drone.
 
@@ -88,7 +88,7 @@ class RoutingAlgorithm(Enum):
     RND = RandomRouting
     QL = QLearningRouting
     Q_FANET = QFanet
-    # QMR = QMR
+    QMR = QMR
 
     @staticmethod
     def keylist():
@@ -104,7 +104,7 @@ class ChannelError(Enum):
         return list(map(lambda c: c.name, ChannelError))
 
 
-ROUTING_ALGORITHM = RoutingAlgorithm.Q_FANET
+ROUTING_ALGORITHM = RoutingAlgorithm.QMR
 CHANNEL_ERROR_TYPE = ChannelError.GAUSSIAN
 
 COMMUNICATION_P_SUCCESS = 1   # float: probability to have success in a communication.

@@ -532,6 +532,12 @@ def clear(c=WHITE):
     """
     _makeSureWindowCreated()
     _surface.fill(_pygameColor(c))
+    pygame.event.clear()
+    while True:
+        event = pygame.event.wait()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a:
+                break
 
 def save(f):
     """

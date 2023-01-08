@@ -140,6 +140,9 @@ class Packet(Entity):
 
     def increase_TTL_hops(self):
         self.__TTL += 1
+    
+    def get_TTL(self):
+        return self.__TTL
 
     def increase_transmission_attempt(self):
         self.number_retransmission_attempt += 1
@@ -222,11 +225,13 @@ class Depot(Entity):
                 delivery_delay = cur_step - pck.event_ref.current_time
 
                 for drone in self.simulator.drones:
-                    drone.routing_algorithm.feedback(current_drone,
+                    drone.routing_algorithm.feedback(current_drone,                 # feedback(self, drone, id_event, delay, outcome, reward, E_j, hop_delay):
                                                      pck.event_ref.identifier,
                                                      delivery_delay,
                                                      feedback,
-                                                     100) # added this 100 for the q-fanet algorithm
+                                                     100,
+                                                     None,
+                                                     None) # added this 100 for the q-fanet algorithm
             #print(f"DEPOT -> Drone {current_drone.identifier} packet: {pck.event_ref} total packets in sim: {len(self.simulator.metrics.drones_packets_to_depot)}")
 
             # add metrics: all the packets notified to the depot
@@ -270,6 +275,9 @@ class Drone(Entity):
 
         # last mission coord to restore the mission after movement
         self.last_mission_coords = None
+    
+    def get_buffer(self):
+        return self.__buffer
 
     def update_packets(self, cur_step):
         """
@@ -298,11 +306,13 @@ class Drone(Entity):
                     current_drone = self
 
                     for drone in self.simulator.drones:
-                        drone.routing_algorithm.feedback(current_drone,
+                        drone.routing_algorithm.feedback(current_drone,         # feedback(self, drone, id_event, delay, outcome, reward, E_j, hop_delay):
                                                          pck.event_ref.identifier,
                                                          self.simulator.event_duration,
                                                          feedback,
-                                                         -100) # added this -100 for the q-fanet algorithm
+                                                         -100, 
+                                                         None,
+                                                         None) # added this -100 for the q-fanet algorithm
         self.__buffer = tmp_buffer
 
         if self.buffer_length() == 0:

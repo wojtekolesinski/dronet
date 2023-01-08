@@ -10,7 +10,7 @@
 #test others algorithms
 for nd in "5" "10" ;
 do
-    for alg in  "RND" "QL";
+    for alg in  "RND" "GEO" "QMR" "Q_FANET";
     do
         echo "run: ${alg} - ndrones ${nd} "
         python -m src.experiments.experiment_ndrones -nd ${nd} -i_s 0 -e_s 10 -alg ${alg} &

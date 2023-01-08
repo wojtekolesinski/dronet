@@ -20,7 +20,7 @@ class QFanet(BASE_routing):
         self.rewards_history = np.zeros(shape=(simulator.n_drones, self.look_back))
 
 
-    def feedback(self, drone, id_event, delay, outcome, reward):
+    def feedback(self, drone, id_event, delay, outcome, reward, energy=None, hop_delay=None):
         """
         Feedback returned when the packet arrives at the depot or
         Expire. This function have to be implemented in RL-based protocols ONLY
@@ -64,7 +64,7 @@ class QFanet(BASE_routing):
         transmission_delay = packet_size / d_1.transmission_rate
         propagation_delay = distance / wave_speed
 
-        print("delay:", transmission_delay + propagation_delay)
+        # print("delay:", transmission_delay + propagation_delay)
         return transmission_delay + propagation_delay
 
 
