@@ -98,6 +98,7 @@ class Packet(Entity):
         self.__TTL = -1  # TTL is the number of hops that the packet crossed
         self.__max_TTL = self.simulator.packets_max_ttl
         self.number_retransmission_attempt = 0
+        self.accumulated_delay = 0
 
         # self.hops = set()  # All the drones that have received/transmitted the packets
         self.last_2_hops = []
@@ -147,6 +148,12 @@ class Packet(Entity):
         """ a packet expires if the deadline of the event expires, or the maximum TTL is reached """
         return cur_step > self.event_ref.deadline
 
+    def add_delay(self, delay):
+        self.accumulated_delay += delay
+    
+    def get_delay(self):
+        return self.accumulated_delay
+
     def __repr__(self):
         packet_type = str(self.__class__).split(".")[-1].split("'")[0]
         return packet_type + "id:" + str(self.identifier) + " event id: " + str(
@@ -182,7 +189,7 @@ class HelloPacket(Packet):
         self.cur_pos = cur_pos
         self.speed = speed
         self.next_target = next_target
-        self.src_drone = src_drone  # Don't use this
+        self.src_drone = src_drone  # Don't use this. (we take just the id)
         self.energy = energy
         self.queue_delay = queue_delay
         self.learning_rate = learning_rate
