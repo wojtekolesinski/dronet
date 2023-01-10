@@ -13,9 +13,9 @@ class QMR(BASE_routing):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
         self.taken_actions = {}  # id event : (old_state, old_action)
         self.look_back = 2 # to tune
-        self.qtable = np.zeros(shape=(config.N_DRONES)) + 0.5
-        self.rewards_history = np.zeros(shape=(config.N_DRONES, self.look_back))
-        self.delay_history = np.zeros(shape=(config.N_DRONES, self.look_back))     # history delay used for normalized one-hop delay
+        self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
+        self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
+        self.delay_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))     # history delay used for normalized one-hop delay
         self.one_hop_del_weight = 0.6
 
 
@@ -82,7 +82,7 @@ class QMR(BASE_routing):
         # this is not the same delay as the paper because we don't have access to the queue delay.
         drone_position = self.drone.coords
         neighbor_position = hello_packet.cur_pos
-        wave_speed = 299337984 # m/s
+        wave_speed = 200 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
         packet_size =  sys.getsizeof(packet) * 8
         distance = utilities.euclidean_distance(drone_position, neighbor_position)
