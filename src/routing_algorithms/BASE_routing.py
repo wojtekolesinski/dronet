@@ -111,6 +111,8 @@ class BASE_routing(metaclass=abc.ABCMeta):
 
                 if best_neighbor is not None:
 
+                    self.drone.decrease_energy("transmission")
+
                     self.unicast_message(pkd, self.drone, best_neighbor, cur_step)
 
                 self.current_n_transmission += 1

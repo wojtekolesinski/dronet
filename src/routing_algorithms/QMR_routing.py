@@ -12,10 +12,10 @@ class QMR(BASE_routing):
     def __init__(self, drone, simulator):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
         self.taken_actions = {}  # id event : (old_state, old_action)
-        self.look_back = 2 # to tune
+        self.look_back = 10 # to tune
         self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
-        self.delay_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))     # history delay used for normalized one-hop delay
+        self.delay_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))    # history delay used for normalized one-hop delay
         self.one_hop_del_weight = 0.6
 
 
@@ -43,6 +43,7 @@ class QMR(BASE_routing):
         if id_event in self.taken_actions:
             
             state, action, old_neighbors = self.taken_actions[id_event]
+            # print("got reward from action", id_event)
             del self.taken_actions[id_event]
 
             reward = self.get_reward(outcome, hop_delay, E_j)    # formula 3
@@ -51,11 +52,13 @@ class QMR(BASE_routing):
 
             if hop_delay is not None:
                 normalized_one_hop_delay, variance = self.get_normalized_one_hop_delay(action, hop_delay)
+                # print("normalized_one_hop_delay:", normalized_one_hop_delay)
                 self.add_delay_to_history(drone.identifier, hop_delay)
             else:
                 normalized_one_hop_delay, variance = self.get_normalized_one_hop_delay(action, self.delay_history[drone.identifier, 0])
             # calculate adaptive learning rate   formula 5
-            adaptive_lr =1 - np.exp(normalized_one_hop_delay) if variance!= 0 else 0.3
+            adaptive_lr = 0.3 if variance == 0 else 1 - np.exp(-normalized_one_hop_delay)
+            # print("normalized_one_hop_delay:", normalized_one_hop_delay)
 
             # calculate adaptive discount factor    formula 6
             cur_step = self.simulator.cur_step
@@ -65,17 +68,22 @@ class QMR(BASE_routing):
             disc_fact = (union_card - intes_card) / union_card
 
             # update the q_table    formula 1
-            a = self.qtable[action]
-            b = disc_fact * np.max(drone.routing_algorithm.qtable)
-            self.qtable[action] = a + adaptive_lr * (reward + b - self.qtable[action])
+            # print(f"Q table update for drone {self.drone.identifier} : {self.qtable[action]} + {adaptive_lr} * ({reward} + {disc_fact} * {np.max(drone.routing_algorithm.qtable)} - {self.qtable[action]})", "=" ,self.qtable[action] + adaptive_lr * (reward + disc_fact * np.max(drone.routing_algorithm.qtable) - self.qtable[action]))
+            self.qtable[action] = self.qtable[action] + adaptive_lr * (reward + disc_fact * np.max(drone.routing_algorithm.qtable) - self.qtable[action])
+            print(self.qtable)
 
     def get_reward(self, o, delay, E_j):
+
+        rew = 0
         if o > 0:
-            return 1
+            rew = 1
         elif o < 0:
-            return 0
+            rew = -1
         else:
-            return self.one_hop_del_weight * np.exp(delay) + (1 - self.one_hop_del_weight) * E_j
+            rew = self.one_hop_del_weight * np.exp(-delay) + (1 - self.one_hop_del_weight) * E_j
+            # print(self.one_hop_del_weight, "*", np.exp(-delay)," + ",  1, "-", self.one_hop_del_weight, "*", E_j, " = ", rew)
+        # print(rew, self.drone.identifier)
+        return rew
 
 
     def get_delay(self, hello_packet, packet):
@@ -99,7 +107,10 @@ class QMR(BASE_routing):
         # get the one hop delay based on the history.
         history = self.delay_history[hop]
         var = np.var(history)
-        one_hop_delay = (delay - np.mean(history)) / var
+        print("delay", delay, "var", var)
+        var = max(0.1, var)
+        one_hop_delay = 0.3 if var == 0 else (delay - np.mean(history)) / var
+        print("delay", delay, "delay history:", history, "one_hop_delay:", one_hop_delay)
         return one_hop_delay, var
     
     def add_delay_to_history(self, drone_id, delay):
@@ -109,8 +120,6 @@ class QMR(BASE_routing):
         self.delay_history[drone_id, :] = history
 
 
-
-
     def relay_selection(self, opt_neighbors: list, packet):
         """
         This function returns the best relay to send packets.
@@ -118,6 +127,9 @@ class QMR(BASE_routing):
         @param opt_neighbors: a list of tuple (hello_packet, source_drone)
         @return: The best drone to use as relay
         """
+
+        if len(opt_neighbors) <= 0:
+            return
 
         action = None
         outcome = None
@@ -160,6 +172,8 @@ class QMR(BASE_routing):
                 [hp.cur_pos[0] + hp.speed * math.cos(angles[idx]) * (t3[idx]-t1[idx]),       # x
                 hp.cur_pos[1] + hp.speed * math.sin(angles[idx]) * (t3[idx]-t1[idx])])       # y   
                                                                                     for idx, hp in enumerate(hello_packets)])   # for each hp I calculate x and y
+        
+        # print("Real" , [drone.coords for hp, drone in opt_neighbors], "\nEstimated", estimated_position, "-"*10, "\n")
 
         # formula 20
         dist = lambda x: utilities.euclidean_distance(drone_position, x)
@@ -177,7 +191,10 @@ class QMR(BASE_routing):
         if len(candidate_neighbors) > 0:
             
             # formula 18 Link Quality
-            LQ = 1 
+            d_f = np.exp(- 0.2 * (distances/config.COMMUNICATION_RANGE_DRONE))
+            d_r = np.exp(- 0.1 * (distances/config.COMMUNICATION_RANGE_DRONE))
+            LQ = d_f * d_r
+            # print("Link Quality", LQ)
             # formula 19 The coefficient of neighbor relationship
             M = np.asarray([1 - distance / config.COMMUNICATION_RANGE_DRONE if distance <= config.COMMUNICATION_RANGE_DRONE else 0 for distance in distances])
             # formula 17 weights
@@ -189,8 +206,14 @@ class QMR(BASE_routing):
             valid_k = k[candidate_neighbors]
 
             # formula 21 choose the best drone
+
+            selected_valid_drone = np.argmax(valid_q_values)
+            best_q = candidate_neighbors[selected_valid_drone]
+
             selected_valid_drone = np.argmax(valid_k * valid_q_values)
             action = candidate_neighbors[selected_valid_drone]
+
+            # print("Q_value", best_q, "Weighted Q_value", action)
             
             # send feedback to previous drone
             outcome = 0
@@ -226,7 +249,7 @@ class QMR(BASE_routing):
                                                         delay)         # self, drone, id_event, delay, outcome, reward, E_i, hop_delay
             
         if action is not None:
-            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, action, [drone.identifier for hp, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
+            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier, [drone.identifier for hp, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
                                                                                                                         # When the reward comes, I can use this to calculate the adaptive discount factor.
             return opt_neighbors[action][1]
 

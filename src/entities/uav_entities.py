@@ -379,6 +379,12 @@ class Drone(Entity):
         self.distance_from_depot = utilities.euclidean_distance(self.depot.coords, self.coords)
         self.routing_algorithm.routing(depot, drones, cur_step)
 
+    def decrease_energy(self, action):
+        if action == "transmission":
+            self.residual_energy -= 100
+        elif action == "move":
+            self.residual_energy -= 10
+
     def move(self, time):
         """ Move the drone to the next point if self.move_routing is false, else it moves towards the depot. 
         
@@ -406,6 +412,8 @@ class Drone(Entity):
 
         # set the last move routing
         self.last_move_routing = self.move_routing
+
+        self.decrease_energy("move")
 
     def is_full(self):
         return self.buffer_length() == self.buffer_max_size
