@@ -43,6 +43,7 @@ def sim_setup(n_drones, seed, algorithm):
 
         # ML parameters
         simulation_name="",
+        run_experiments = True
 
     )
 

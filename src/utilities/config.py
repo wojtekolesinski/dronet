@@ -39,7 +39,7 @@ RANDOM_START_POINT = True  # bool whether the drones start the mission at random
 # ------------------------------- CONSTANTS ------------------------------- #
 
 DEBUG = False                         # bool: whether to print debug strings or not.
-EXPERIMENTS_DIR = "data/evaluation_tests/"  # output data : the results of the simulation
+EXPERIMENTS_DIR = "data/experiments/"  # output data : the results of the simulation
 
 # drawaing
 PLOT_SIM = False      # bool: whether to plot or not the simulation.
@@ -104,7 +104,7 @@ class ChannelError(Enum):
         return list(map(lambda c: c.name, ChannelError))
 
 
-ROUTING_ALGORITHM = RoutingAlgorithm.QMR
+ROUTING_ALGORITHM = RoutingAlgorithm.Q_FANET
 CHANNEL_ERROR_TYPE = ChannelError.GAUSSIAN
 
 COMMUNICATION_P_SUCCESS = 1   # float: probability to have success in a communication.

@@ -8,8 +8,9 @@ import numpy as np
 import matplotlib.patches as mpatches
 import collections
 import matplotlib
+import sys, os
+sys.path.append(os.getcwd())
 from src.utilities import config
-
 
 from argparse import ArgumentParser
 
@@ -20,7 +21,7 @@ LEGEND_SIZE = 14
 TITLE_SIZE = 26
 ALL_SIZE = 14
 
-def plot_coverage_distribution(filename_format : list, ndrones :list, metric : str, 
+def plot_coverage_distribution(filename_format : str, ndrones :list, metric : str, 
                             alg_ritrasmission : list, seeds :list, size_mission : int):
     """ plot for varying ndrones """
     for nd in ndrones:
@@ -57,13 +58,16 @@ def coverage_distribution(filename_format : str, ndrones : int,
     X = []
     Y = []
     for seed in seeds:
-        file_name = filename_format.format(ndrones, seed, alg_k)
-        with open(file_name, 'r') as fp:
-            ktri_0 = json.load(fp)
-            delivered_packets = ktri_0["drones_packets"]
-            for pack in delivered_packets:
-                X.append(pack["coord"][0])
-                Y.append(pack["coord"][1])
+        file_name = filename_format.format(seed, ndrones, alg_k)
+        try:
+            with open(file_name, 'r') as fp:
+                ktri_0 = json.load(fp)
+                delivered_packets = ktri_0["drones_packets"]
+                for pack in delivered_packets:
+                    X.append(pack["coord"][0])
+                    Y.append(pack["coord"][1])
+        except:
+            print(f'File {file_name} is missing.')
     return X, Y 
 
 #TODO: this is done for each METRIC!!! can be done once at the beginning for all the metrics
@@ -71,17 +75,20 @@ def mean_std_of_metric(filename_format : str, ndrones : int,
                         alg_k : int, seeds : list, metric : str):
     data = []
     for seed in seeds:
-        file_name = filename_format.format(ndrones, seed, alg_k)
-        with open(file_name, 'r') as fp:
-            ktri_0 = json.load(fp)
-            if metric == "ratio_delivery_generated":
-                data.append(ktri_0["number_of_events_to_depot"] 
-                                        / ktri_0["number_of_generated_events"])
-            elif metric == "ratio_delivery_detected":
-                data.append(ktri_0["number_of_events_to_depot"] 
-                                / ktri_0["number_of_detected_events"])
-            else:
-                data.append(ktri_0[metric])
+        file_name = filename_format.format(seed, ndrones, alg_k)
+        try:
+            with open(file_name, 'r') as fp:
+                ktri_0 = json.load(fp)
+                if metric == "ratio_delivery_generated":
+                    data.append(ktri_0["number_of_events_to_depot"] 
+                                            / ktri_0["number_of_generated_events"])
+                elif metric == "ratio_delivery_detected":
+                    data.append(ktri_0["number_of_events_to_depot"] 
+                                    / ktri_0["number_of_detected_events"])
+                else:
+                    data.append(ktri_0[metric])
+        except:
+            print(f'File {file_name} is missing.')
 
     return np.mean(data), np.std(data)
 
@@ -100,7 +107,7 @@ def plot_ndrones(filename_format : list, ndrones :list, metric : str,
         data_alg_k = []
         #for each x ticks 
         for nd in n_drones:
-            data_alg_k.append(mean_std_of_metric(filename_format, nd, alg_k, seeds, metric)[0])
+            data_alg_k.append(mean_std_of_metric(filename_format, nd, alg_k, seeds, metric))
         out_data[alg_k] = data_alg_k
     
     ax = plt.subplot(111)
@@ -109,9 +116,10 @@ def plot_ndrones(filename_format : list, ndrones :list, metric : str,
 
     ax.grid()
     for alg_k in out_data.keys():
-        y_data = out_data[alg_k]
+        y_data = [e[0] for e in out_data[alg_k]]
+        std_data = [e[1] for e in out_data[alg_k]]
         #TODO: texture and colors and linestyle for the results 
-        ax.plot(x, y_data, label=alg_k)
+        ax.errorbar(x, y_data, yerr=std_data, label=alg_k, fmt='-o')
 
     plt.ylabel(metric, fontsize=LABEL_SIZE)
     plt.xlabel(exp_metric.replace("_", ""), fontsize=LABEL_SIZE)
@@ -131,8 +139,7 @@ def plot_ndrones(filename_format : list, ndrones :list, metric : str,
     plt.clf()
 
 def set_font():
-    font = {'family' : 'normal',
-            'size'   : ALL_SIZE}
+    font = {'size'   : ALL_SIZE}
     matplotlib.rc('font', **font)
 
 METRICS_OF_INTEREST = [
@@ -159,17 +166,15 @@ if __name__ == "__main__":
     routing_choices = config.RoutingAlgorithm.keylist()
 
     # MANDATORY
-    parser.add_argument("-nd", dest='number_of_drones', action="append", type=int,
-                        help="the number of drones to use in the simulataion")
-    parser.add_argument("-i_s", dest='initial_seed', action="store", type=int,
+    parser.add_argument("-nd", dest='number_of_drones', action="append", default = [5,10,15,20,25,30], type=list,
+                        help="list of the number of drones to use in the simulataion")
+    parser.add_argument("-i_s", dest='initial_seed', action="store", default = 0, type=int,
                         help="the initial seed to use in the simualtions")
-    parser.add_argument("-e_s", dest='end_seed', action="store", type=int,
+    parser.add_argument("-e_s", dest='end_seed', action="store", default = 30, type=int,
                         help="the end seed to use in the simualtions"   
                              + "-notice that the simulations will run for seed in (i_s, e_s)")
-    parser.add_argument("-exp_suffix", dest='alg_exp_suffix', action="append", type=str,
-                        help="the routing algorithm suffix to read exp data: es: K_ROUTING_500 or MOVE")
-    parser.add_argument("-exp_metric", dest='exp_metric', action="store", type=str, default="ndrones_",
-                        help="the exp metric to run, should be in [ninterval_ speed_ ndrones_] ")
+    parser.add_argument("-exp_suffix", dest='alg_exp_suffix', action="append", default= ["RND", "GEO", "Q_FANET", "QMR"] , type=list,
+                        help="list of the routing algorithm suffix to read exp data: es: K_ROUTING_500 or MOVE")
      
      
 
@@ -178,8 +183,6 @@ if __name__ == "__main__":
     #drones
     n_drones = args.number_of_drones
     
-    #suffix for metric
-    exp_metric = args.exp_metric
 
     #initial seed
     initial_seed = args.initial_seed
@@ -192,13 +195,26 @@ if __name__ == "__main__":
     alg_exp_suffix = args.alg_exp_suffix
     
     
-    pattern_file = config.EXPERIMENTS_DIR + "out__" + exp_metric + "{}_seed{}_alg_{}.json"
+    pattern_file = config.EXPERIMENTS_DIR + "experiment__seed_{}_ndrones_{}_alg_{}.json"
+    
     out_dir = config.SAVE_PLOT_DIR
     print(alg_exp_suffix)
+    METRICS_OF_INTEREST = ['packet_delivery_ratio', 'packet_mean_delivery_time']
+    '''number_of_generated_events', 
+        'number_of_detected_events', 
+        'number_of_events_to_depot', 
+        'number_of_packets_to_depot', 
+        'packet_mean_delivery_time', 
+        'event_mean_delivery_time', 
+        'time_on_mission',
+        'time_on_active_routing', 
+        'Routing time / mission time',
+        'ratio_delivery_generated',
+        'ratio_delivery_detected'''
+    
     for metric in METRICS_OF_INTEREST:
-        plot_ndrones(pattern_file, n_drones, metric, alg_exp_suffix, n_seeds, out_dir + "_" + str(exp_metric) + "_", exp_metric)
+        plot_ndrones(pattern_file, n_drones, metric, alg_exp_suffix, n_seeds, out_dir,  'ndrones')
 
     #size_mission = 3000
-    plot_coverage_distribution(pattern_file, n_drones, config.SAVE_PLOT_DIR + 'coverage_distribution', 
-                            alg_exp_suffix, n_seeds, dim_area)    
-    
+    #plot_coverage_distribution(pattern_file, n_drones, config.SAVE_PLOT_DIR + 'coverage_distribution', 
+    #                        alg_exp_suffix, n_seeds, dim_area)    

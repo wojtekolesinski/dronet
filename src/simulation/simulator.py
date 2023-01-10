@@ -43,7 +43,8 @@ class Simulator:
                  routing_algorithm=config.ROUTING_ALGORITHM,
                  communication_error_type=config.CHANNEL_ERROR_TYPE,
                  prob_size_cell_r=config.CELL_PROB_SIZE_R,
-                 simulation_name=""):
+                 simulation_name="",
+                 run_experiments = False):
         self.cur_step = None
         self.drone_com_range = drone_com_range
         self.drone_sen_range = drone_sen_range
@@ -68,6 +69,7 @@ class Simulator:
         self.show_plot = show_plot
         self.routing_algorithm = routing_algorithm
         self.communication_error_type = communication_error_type
+        self.run_experiments = run_experiments
 
         # --------------- cell for drones -------------
         self.prob_size_cell_r = prob_size_cell_r
@@ -87,8 +89,14 @@ class Simulator:
         # Setup the simulation
         self.__set_simulation()
         self.__set_metrics()
+        
+        self.save_data_dir = config.EXPERIMENTS_DIR if self.run_experiments else config.ROOT_EVALUATION_DATA
 
-        self.simulation_name = "simulation-" + utilities.date() + "" + str(simulation_name) + "" + str(self.seed) + "_" + str(self.n_drones) + "" + str(self.routing_algorithm)# "simulation-" + str(self.seed) + "_" + str(self.n_drones) + "_" + str(self.routing_algorithm)
+        self.simulation_name = "simulation-" + utilities.date() + "_" + str(simulation_name) + "_" + str(self.seed) + "_" + str(self.n_drones) + "_" + str(self.routing_algorithm.name)
+        
+        if run_experiments == True:
+            self.simulation_name = "experiment__seed_" + str(self.seed) + "_ndrones_" + str(self.n_drones) + "_alg_" + str(self.routing_algorithm.name)
+
         self.simulation_test_dir = self.simulation_name + "/"
 
         self.start = time.time()
@@ -236,7 +244,7 @@ class Simulator:
         print("Closing simulation")
 
         self.print_metrics(plot_id="final")
-        self.save_metrics(config.ROOT_EVALUATION_DATA + self.simulation_name)
+        self.save_metrics(self.save_data_dir + self.simulation_name)
 
     def print_metrics(self, plot_id="final"):
         """ add signature """

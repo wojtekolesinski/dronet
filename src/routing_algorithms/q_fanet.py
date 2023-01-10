@@ -15,7 +15,6 @@ class QFanet(BASE_routing):
         self.look_back = 10 # to tune
         self.weights = np.asarray([math.pow(i, 5) for i in range(self.look_back + 1, 1, -1)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
         self.weights /= np.sum(self.weights, dtype=np.float64)
-        print(self.weights)
         self.qtable = np.zeros(shape=(simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(simulator.n_drones, self.look_back))
 
