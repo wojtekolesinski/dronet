@@ -12,7 +12,7 @@ class QMR(BASE_routing):
     def __init__(self, drone, simulator):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
         self.taken_actions = {}  # id event : (old_state, old_action)
-        self.look_back = 10 # to tune
+        self.look_back = 1000 # to tune
         self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
         self.delay_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))    # history delay used for normalized one-hop delay
@@ -70,7 +70,7 @@ class QMR(BASE_routing):
             # update the q_table    formula 1
             # print(f"Q table update for drone {self.drone.identifier} : {self.qtable[action]} + {adaptive_lr} * ({reward} + {disc_fact} * {np.max(drone.routing_algorithm.qtable)} - {self.qtable[action]})", "=" ,self.qtable[action] + adaptive_lr * (reward + disc_fact * np.max(drone.routing_algorithm.qtable) - self.qtable[action]))
             self.qtable[action] = self.qtable[action] + adaptive_lr * (reward + disc_fact * np.max(drone.routing_algorithm.qtable) - self.qtable[action])
-            print(self.qtable)
+            # print(self.qtable)
 
     def get_reward(self, o, delay, E_j):
 
@@ -81,7 +81,7 @@ class QMR(BASE_routing):
             rew = -1
         else:
             rew = self.one_hop_del_weight * np.exp(-delay) + (1 - self.one_hop_del_weight) * E_j
-            # print(self.one_hop_del_weight, "*", np.exp(-delay)," + ",  1, "-", self.one_hop_del_weight, "*", E_j, " = ", rew)
+            print(self.one_hop_del_weight, "*", np.exp(-delay)," + ",  1, "-", self.one_hop_del_weight, "*", E_j, " = ", rew)
         # print(rew, self.drone.identifier)
         return rew
 
@@ -107,10 +107,9 @@ class QMR(BASE_routing):
         # get the one hop delay based on the history.
         history = self.delay_history[hop]
         var = np.var(history)
-        print("delay", delay, "var", var)
-        var = max(0.1, var)
-        one_hop_delay = 0.3 if var == 0 else (delay - np.mean(history)) / var
-        print("delay", delay, "delay history:", history, "one_hop_delay:", one_hop_delay)
+        # print("delay", delay, "var", var)
+        one_hop_delay = 0.3 if var <= 0.1 else (delay - np.mean(history)) / var
+        # print("delay", delay, "delay history:", history, "one_hop_delay:", one_hop_delay)
         return one_hop_delay, var
     
     def add_delay_to_history(self, drone_id, delay):
@@ -176,13 +175,14 @@ class QMR(BASE_routing):
         # print("Real" , [drone.coords for hp, drone in opt_neighbors], "\nEstimated", estimated_position, "-"*10, "\n")
 
         # formula 20
-        dist = lambda x: utilities.euclidean_distance(drone_position, x)
-        distances = np.asarray([dist(pos) for pos in estimated_position])
+        dist_dr = lambda x: utilities.euclidean_distance(drone_position, x)
+        distances = np.asarray([dist_dr(pos) for pos in estimated_position])
 
 
         # formula 16
         dist = lambda x: utilities.euclidean_distance(depot_position, x)
-        neighbor_dist_from_depot =  np.asarray([dist(pos) for pos in estimated_position])
+        neighbor_dist_from_depot =  np.asarray([dist(pos) if dist_dr(pos) <= config.COMMUNICATION_RANGE_DRONE else 69420 for pos in estimated_position])
+        # print(f"neighbor_dist_from_depot {[hp.src_drone.identifier for hp in hello_packets]} (Drone: {self.drone.identifier})", neighbor_dist_from_depot)
     
         actual_velocities = (d_iD - neighbor_dist_from_depot) / delays
         # print(actual_velocities)

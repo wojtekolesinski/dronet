@@ -383,6 +383,8 @@ class Drone(Entity):
         if action == "transmission":
             self.residual_energy -= 100
         elif action == "move":
+            self.residual_energy -= self.speed * 100
+        elif action == "hello":
             self.residual_energy -= 10
 
     def move(self, time):

@@ -60,6 +60,8 @@ class BASE_routing(metaclass=abc.ABCMeta):
 
         self.broadcast_message(my_hello, self.drone, drones, cur_step)
 
+        self.drone.decrease_energy("hello")
+
     def routing(self, depot, drones, cur_step):
         # set up this routing pass
         self.drone_identification(drones, cur_step)
