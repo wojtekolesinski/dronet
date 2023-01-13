@@ -3,6 +3,7 @@ from src.routing_algorithms.georouting import GeoRouting
 from src.routing_algorithms.q_learning_routing import QLearningRouting
 from src.routing_algorithms.random_routing import RandomRouting
 from src.routing_algorithms.q_fanet import QFanet
+from src.routing_algorithms.Q_Fanet_FRA import Q_FANET
 from src.routing_algorithms.QMR_routing import QMR
 from enum import Enum
 
@@ -75,7 +76,7 @@ COMMUNICATION_RANGE_DRONE = 150  # float: meters, communication range of the dro
 SENSING_RANGE_DRONE = 0        # float: meters, the sensing range of the drones.
 DRONE_SPEED = 8                 # float: m/s, drone speed.
 DRONE_MAX_BUFFER_SIZE = 10000     # int: max number of packets in the buffer of a drone.
-DRONE_MAX_ENERGY = 100000000           # int: max energy of a drone.
+DRONE_MAX_ENERGY = 10000000           # int: max energy of a drone.
 
 # depot
 DEPOT_COMMUNICATION_RANGE = 150  # float: meters, communication range of the depot.
@@ -87,7 +88,8 @@ class RoutingAlgorithm(Enum):
     GEO = GeoRouting
     RND = RandomRouting
     QL = QLearningRouting
-    Q_FANET = QFanet
+    Q_FANET_ANDREA = QFanet
+    Q_FANET_FRA= Q_FANET
     QMR = QMR
 
     @staticmethod
