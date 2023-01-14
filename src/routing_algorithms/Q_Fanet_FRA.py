@@ -21,7 +21,7 @@ class Q_FANET(BASE_routing):
         self.epsilon = 0.1
 
 
-    def feedback(self, drone, id_event, delay = None, outcome = None, reward = None, E_j = None, hop_delay = None):
+    def feedback(self, drone, id_event, delay, outcome , reward = None, E_j = None, hop_delay = None):
         """
         Feedback returned when the packet arrives at the depot or
         Expire. This function have to be implemented in RL-based protocols ONLY
@@ -151,12 +151,12 @@ class Q_FANET(BASE_routing):
             #Q_Learning sub-module
 
             # random value > greedy value
-            if np.random.uniform() > self.epsilon:
+            if self.simulator.rnd_routing.rand() > self.epsilon:
                 # select value with highest q
                 action = np.argmax(self.qtable[candidate_neighbors])
             else:
                 # select random value
-                action = np.random.randint(0, len(candidate_neighbors))
+                action = self.simulator.rnd_routing.randint(0, len(opt_neighbors))
 
             # apply reward function
             outcome = 0
@@ -176,9 +176,10 @@ class Q_FANET(BASE_routing):
 
 
         for drone in self.simulator.drones:
+            delivery_delay = self.simulator.cur_step - packet.event_ref.current_time
             drone.routing_algorithm.feedback(self.drone,
                                                         packet.event_ref.identifier,
-                                                        None,
+                                                        delivery_delay,
                                                         outcome,
                                                         None,
                                                         None,

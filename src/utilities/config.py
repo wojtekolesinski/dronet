@@ -60,7 +60,7 @@ SIM_DURATION = 60000   # int: steps of simulation. # ***
 TS_DURATION = 0.150   # float: seconds duration of a step in seconds.
 SEED = 10  # int: seed of this simulation.
 
-N_DRONES = 5    # int: number of drones. # ***
+N_DRONES = 25    # int: number of drones. # ***
 ENV_WIDTH = 1500      # float: meters, width of environment.
 ENV_HEIGHT = 1500     # float: meters, height of environment.
 
@@ -88,7 +88,7 @@ class RoutingAlgorithm(Enum):
     GEO = GeoRouting
     RND = RandomRouting
     QL = QLearningRouting
-    Q_FANET_ANDREA = QFanet
+    Q_FANET = QFanet
     Q_FANET_FRA= Q_FANET
     QMR = QMR
 
@@ -106,7 +106,7 @@ class ChannelError(Enum):
         return list(map(lambda c: c.name, ChannelError))
 
 
-ROUTING_ALGORITHM = RoutingAlgorithm.QMR
+ROUTING_ALGORITHM = RoutingAlgorithm.Q_FANET_FRA
 CHANNEL_ERROR_TYPE = ChannelError.GAUSSIAN
 
 COMMUNICATION_P_SUCCESS = 1   # float: probability to have success in a communication.
