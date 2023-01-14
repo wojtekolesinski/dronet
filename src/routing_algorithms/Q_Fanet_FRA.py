@@ -7,7 +7,7 @@ from src.utilities import utilities
 import src.utilities.config as config
 
 
-class Q_FANET(BASE_routing):
+class Q_Fanet(BASE_routing):
 
     def __init__(self, drone, simulator):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)

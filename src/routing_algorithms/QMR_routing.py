@@ -81,7 +81,7 @@ class QMR(BASE_routing):
             rew = -1
         else:
             rew = self.one_hop_del_weight * np.exp(-delay) + (1 - self.one_hop_del_weight) * E_j
-            print(self.one_hop_del_weight, "*", np.exp(-delay)," + ",  1, "-", self.one_hop_del_weight, "*", E_j, " = ", rew)
+            # print(self.one_hop_del_weight, "*", np.exp(-delay)," + ",  1, "-", self.one_hop_del_weight, "*", E_j, " = ", rew)
         # print(rew, self.drone.identifier)
         return rew
 
@@ -90,7 +90,7 @@ class QMR(BASE_routing):
         # this is not the same delay as the paper because we don't have access to the queue delay.
         drone_position = self.drone.coords
         neighbor_position = hello_packet.cur_pos
-        wave_speed = 200 # m/s
+        wave_speed = 3000000 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
         packet_size =  sys.getsizeof(packet) * 8
         distance = utilities.euclidean_distance(drone_position, neighbor_position)
@@ -181,7 +181,7 @@ class QMR(BASE_routing):
 
         # formula 16
         dist = lambda x: utilities.euclidean_distance(depot_position, x)
-        neighbor_dist_from_depot =  np.asarray([dist(pos) if dist_dr(pos) <= config.COMMUNICATION_RANGE_DRONE else 69420 for pos in estimated_position])
+        neighbor_dist_from_depot =  np.asarray([dist(pos) for pos in estimated_position])
         # print(f"neighbor_dist_from_depot {[hp.src_drone.identifier for hp in hello_packets]} (Drone: {self.drone.identifier})", neighbor_dist_from_depot)
     
         actual_velocities = (d_iD - neighbor_dist_from_depot) / delays
@@ -252,7 +252,3 @@ class QMR(BASE_routing):
             self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier, [drone.identifier for hp, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
                                                                                                                         # When the reward comes, I can use this to calculate the adaptive discount factor.
             return opt_neighbors[action][1]
-
-        
-
-        

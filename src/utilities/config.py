@@ -3,7 +3,7 @@ from src.routing_algorithms.georouting import GeoRouting
 from src.routing_algorithms.q_learning_routing import QLearningRouting
 from src.routing_algorithms.random_routing import RandomRouting
 from src.routing_algorithms.q_fanet import QFanet
-from src.routing_algorithms.Q_Fanet_FRA import Q_FANET
+from src.routing_algorithms.Q_Fanet_FRA import Q_Fanet
 from src.routing_algorithms.QMR_routing import QMR
 from enum import Enum
 
@@ -60,7 +60,7 @@ SIM_DURATION = 60000   # int: steps of simulation. # ***
 TS_DURATION = 0.150   # float: seconds duration of a step in seconds.
 SEED = 10  # int: seed of this simulation.
 
-N_DRONES = 25    # int: number of drones. # ***
+N_DRONES = 20   # int: number of drones. # ***
 ENV_WIDTH = 1500      # float: meters, width of environment.
 ENV_HEIGHT = 1500     # float: meters, height of environment.
 
@@ -89,7 +89,7 @@ class RoutingAlgorithm(Enum):
     RND = RandomRouting
     QL = QLearningRouting
     Q_FANET = QFanet
-    Q_FANET_FRA= Q_FANET
+    Q_FANET_FRA= Q_Fanet
     QMR = QMR
 
     @staticmethod
@@ -106,7 +106,7 @@ class ChannelError(Enum):
         return list(map(lambda c: c.name, ChannelError))
 
 
-ROUTING_ALGORITHM = RoutingAlgorithm.Q_FANET_FRA
+ROUTING_ALGORITHM = RoutingAlgorithm.QMR
 CHANNEL_ERROR_TYPE = ChannelError.GAUSSIAN
 
 COMMUNICATION_P_SUCCESS = 1   # float: probability to have success in a communication.
