@@ -188,16 +188,16 @@ class QMR(BASE_routing):
         # formula 12 (Requested Velocity to transmit the data packet)
         V = d_iD / deadlines  # m/s
         
-        # Angles
-        angles = np.asarray([np.arctan2(hp.next_target[1] -  hp.cur_pos[1], hp.next_target[0] -  hp.cur_pos[0]) for hp in hello_packets])
-        
-        
-        # formula 13 & 14 predicted positions of neighbor
-        estimated_position = np.asarray([
-            np.asarray(
-                [hp.cur_pos[0] + hp.speed * math.cos(angles[idx]) * (t3[idx]-t1[idx]),       # x
-                hp.cur_pos[1] + hp.speed * math.sin(angles[idx]) * (t3[idx]-t1[idx])])       # y   
-                                                                                    for idx, hp in enumerate(hello_packets)])   # for each hp I calculate x and y
+        estimated_position = []
+        for idx, hp in enumerate(hello_packets):
+            p0 = hp.cur_pos
+            p1 = hp.next_target
+            all_distance = utilities.euclidean_distance(p0, p1)
+            distance = (t3[idx]-t1[idx]) * hp.speed
+            t = distance / all_distance
+            pred = ((1 - t) * p0[0] + t * p1[0]), ((1 - t) * p0[1] + t * p1[1])
+            estimated_position.append(pred)
+        estimated_position = np.asarray(estimated_position)
         
         
         
