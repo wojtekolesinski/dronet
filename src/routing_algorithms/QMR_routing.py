@@ -234,9 +234,6 @@ class QMR(BASE_routing):
 
             # formula 21 choose the best drone
 
-            selected_valid_drone = np.argmax(valid_q_values)
-            best_q = candidate_neighbors[selected_valid_drone]
-
             selected_valid_drone = np.argmax(valid_k * valid_q_values)
             action = candidate_neighbors[selected_valid_drone]
 
