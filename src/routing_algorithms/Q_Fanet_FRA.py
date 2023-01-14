@@ -149,15 +149,17 @@ class Q_Fanet(BASE_routing):
         
         if len(candidate_neighbors) > 0:
             #Q_Learning sub-module
-
+            c_n = None
             # random value > greedy value
             if self.simulator.rnd_routing.rand() > self.epsilon:
                 # select value with highest q
-                action = np.argmax(self.qtable[candidate_neighbors])
+                c_n = np.argmax(self.qtable[candidate_neighbors])
             else:
                 # select random value
-                action = self.simulator.rnd_routing.randint(0, len(opt_neighbors))
-
+                c_n = self.simulator.rnd_routing.randint(0, len(candidate_neighbors))
+           
+            action = candidate_neighbors[c_n]
+            
             # apply reward function
             outcome = 0
 
