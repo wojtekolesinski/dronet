@@ -1,25 +1,27 @@
 from src.routing_algorithms.BASE_routing import BASE_routing
 from src.utilities import utilities as util
 import numpy as np
-import math
 import sys
+import math
 from src.utilities import utilities
+import src.utilities.config as config
 
-class QFanet(BASE_routing):
+
+class Q_Fanet(BASE_routing):
 
     def __init__(self, drone, simulator):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
-        self.sigma = 0.1
         self.taken_actions = {}  # id event : (old_state, old_action)
-        self.lr = 0.6 # to tune
         self.look_back = 10 # to tune
-        self.weights = np.asarray([math.pow(i, 5) for i in range(self.look_back + 1, 1, -1)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
+        self.weights = np.asarray([i for i in range(self.look_back + 1, 1, -1)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
         self.weights /= np.sum(self.weights, dtype=np.float64)
-        self.qtable = np.zeros(shape=(simulator.n_drones)) + 0.5
-        self.rewards_history = np.zeros(shape=(simulator.n_drones, self.look_back))
+        self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
+        self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
+        self.lr = 0.6
+        self.epsilon = 0.1
 
 
-    def feedback(self, drone, id_event, delay, outcome, reward, energy=None, hop_delay=None):
+    def feedback(self, drone, id_event, delay, outcome , reward = None, E_j = None, hop_delay = None):
         """
         Feedback returned when the packet arrives at the depot or
         Expire. This function have to be implemented in RL-based protocols ONLY
@@ -30,43 +32,56 @@ class QFanet(BASE_routing):
         @return:
         """
 
-        # Be aware, due to network errors we can give the same event to multiple drones and receive multiple
-        # feedback for the same packet!!
+        # Read this
+
+        # During the feedback function, we have to calculate the adaptive learning rate and the adaptive discount factor.
+        # In order to do this, we need:
+        # - energy of the that is sending the feedback drone (j). This must be passed as parameter of the feedback function
+        # - the discount factor: we need the list of neighbors at time t-1 and the current neighbors.
 
         if id_event in self.taken_actions:
-
-            # take the old action
+            
             state, action = self.taken_actions[id_event]
-            # remove the entry, the action has received the feedback
+            # print("got reward from action", id_event)
             del self.taken_actions[id_event]
-            # reward or update using the old state and the selected action at that time
             weights_reward_mult = np.matmul(self.weights.T, self.rewards_history[action, :].flatten())
-            # print("weights_reward_mult", weights_reward_mult)
+            reward = self.get_reward(outcome)    # formula 3
             self.qtable[action] = (1 - self.lr) * (weights_reward_mult) + self.lr * reward
-            # Save the last reward
+
+            # print(self.qtable)
+
             raw_slice = self.rewards_history[action, :]
             raw_slice = np.roll(raw_slice, 1)
             raw_slice[0] = reward
             self.rewards_history[action, :] = raw_slice
-            # print(f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}" "\nDrone:", self.drone.identifier,"\nSlice:", raw_slice, "\nQtable:", self.qtable)
+
+    def get_reward(self, o):
+        rew = 0
+        if o > 0:
+            rew = 100
+        elif o < 0:
+            rew = -100
+        else:
+            rew = 50
+        return rew
 
 
-    def get_delay(self, d_1, d_2, packet):
-        drone_position = d_1.coords
-        neighbor_position = d_2.coords
-        wave_speed = 299337984 # m/s
+    def get_delay(self, hello_packet, packet):
+        # this is not the same delay as the paper because we don't have access to the queue delay.
+        drone_position = self.drone.coords
+        neighbor_position = hello_packet.cur_pos
+        wave_speed = 300000 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
         packet_size =  sys.getsizeof(packet) * 8
         distance = utilities.euclidean_distance(drone_position, neighbor_position)
         
         # consider transmission and propagation delay
-        transmission_delay = packet_size / d_1.transmission_rate
+        transmission_delay = packet_size / self.drone.transmission_rate
         propagation_delay = distance / wave_speed
 
         # print("delay:", transmission_delay + propagation_delay)
+
         return transmission_delay + propagation_delay
-
-
 
     def relay_selection(self, opt_neighbors: list, packet):
         """
@@ -75,70 +90,100 @@ class QFanet(BASE_routing):
         @param opt_neighbors: a list of tuple (hello_packet, source_drone)
         @return: The best drone to use as relay
         """
-        # get velocity constraints: 
-        #     the constraint necessary to obtain the minimum delay between hops.
-        #     pag. 8 of q-fanet
-        
-        # no candidate neighbor?
+        action = None
+        outcome = None
+        delay = None
+
         depot_position = self.simulator.depot.coords
         drone_position = self.drone.coords
         
-        distances = np.asarray([utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(neighbor.coords, depot_position) for _, neighbor in opt_neighbors])  # check whether the current drone is the closest to the depot
+        # distances = np.asarray([utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(hp.cur_pos, depot_position) for hp, n in opt_neighbors])  # check whether the current drone is the closest to the depot
+        # candidate_neighbors = np.asarray(opt_neighbors)[np.where(distances < 0)[0]]
+        hello_packets = np.asarray([hp for hp, _ in opt_neighbors])
         
-        # no candidate neighbor? -> yes
-        if np.all(distances < 0):
-            # QMR submodule
-            # Any neighbor with velocity > 0?
-            delays = [self.get_delay(self.drone, neighbor, packet) for _, neighbor in opt_neighbors]
-            neighbor_speed = np.asarray([(utilities.euclidean_distance(drone_position, depot_position) - utilities.euclidean_distance(neighbor_drone.coords, depot_position)) / (delays[idx]) for idx, (_, neighbor_drone) in enumerate(opt_neighbors)])
-            positive_speed_idx = np.where(neighbor_speed > 0)[0]
-            # print("neighbor speed:", neighbor_speed, "positive speed:", positive_speed_idx)
+            # No candidate neighbor: N
+
+        delays = np.array([self.get_delay(hp, packet) for hp in hello_packets])
+
+        t1 = np.asarray([hp.time_step_creation * config.TS_DURATION for hp in hello_packets])   # in s
+        t2 = self.simulator.cur_step * config.TS_DURATION      # in s
+        #formula 15  time when packet will arrive at node j
+        t3 = np.asarray([t2 + d for d in delays]) # hardcoded values. If each step is about 0.02 sec, then we are considernig t1 + 0.1 and t1 + 0.16 seconds after the current time.
+                    # Each drone wil travel about 2.28m each timestep if he is travelling at 114 m/s (speed of a military drone)
+                    # This should be an acceptable value as the delay is about 0.0019 and the time taken by a ping is then 0.0038 which is 1/5.26 of a step
+                    # in s
+        d_iD = utilities.euclidean_distance(drone_position, depot_position)
+        
+        # formula 11 (we made it different) 
+        TTL = config.PACKETS_MAX_TTL - packet.get_TTL()
+        deadlines = np.asarray([TTL * config.TS_DURATION - d for d in delays])
+
+        # formula 12 (Requested Velocity to transmit the data packet)
+        V = d_iD / deadlines  # m/s
+        
+        # Angles
+        angles = np.asarray([np.arctan2(hp.next_target[1] -  hp.cur_pos[1], hp.next_target[0] -  hp.cur_pos[0]) for hp in hello_packets])
+
+        estimated_position = [(hp.cur_pos[0], hp.cur_pos[1]) for hp in hello_packets]
+
+        # formula 20
+        dist_dr = lambda x: utilities.euclidean_distance(drone_position, x)
+        distances = np.asarray([dist_dr(pos) for pos in estimated_position])
 
 
-            # Any neighbor with velocity > 0? -> no
-            if len(positive_speed_idx) <= 0:
-                # penalty mechanism: bad reward
-                for drone in self.simulator.drones:
-                        delivery_delay = self.simulator.cur_step - packet.event_ref.current_time
-                        drone.routing_algorithm.feedback(self.drone,
+        # formula 16
+        dist = lambda x: utilities.euclidean_distance(depot_position, x)
+        neighbor_dist_from_depot =  np.asarray([dist(pos) if dist_dr(pos) <= config.COMMUNICATION_RANGE_DRONE else 69420 for pos in estimated_position])
+    
+        actual_velocities = (d_iD - neighbor_dist_from_depot) / delays
+        candidate_neighbors = np.where((neighbor_dist_from_depot <= d_iD))[0]
+
+        
+        if len(candidate_neighbors) > 0:
+            #Q_Learning sub-module
+            c_n = None
+            # random value > greedy value
+            if self.simulator.rnd_routing.rand() > self.epsilon:
+                # select value with highest q
+                c_n = np.argmax(self.qtable[candidate_neighbors])
+            else:
+                # select random value
+                c_n = self.simulator.rnd_routing.randint(0, len(candidate_neighbors))
+           
+            action = candidate_neighbors[c_n]
+            
+            # apply reward function
+            outcome = 0
+
+        else:
+            #QMR 
+            # No candidate neighbor: Y
+            #if there are neighbors whose actual velocity is greater than 0
+            penalty_condition = np.where(actual_velocities > 0)[0]
+            if len(penalty_condition) > 0:
+                action = np.argmax(actual_velocities)
+                outcome = 0 
+            else:   #penalty mechanism
+                outcome = -1 
+                delay = None
+            pass
+
+
+        for drone in self.simulator.drones:
+            delivery_delay = self.simulator.cur_step - packet.event_ref.current_time
+            drone.routing_algorithm.feedback(self.drone,
                                                         packet.event_ref.identifier,
                                                         delivery_delay,
-                                                        -1,
-                                                        -100)
-            # Any neighbor with velocity > 0? -> no 
-            else: 
-                # give to faster
-                delivery_delay = self.simulator.cur_step - packet.event_ref.current_time                
-                for drone in self.simulator.drones:
-                    drone.routing_algorithm.feedback(self.drone,
-                                                            packet.event_ref.identifier,
-                                                            delivery_delay,
-                                                            1,
-                                                            50)
-                action = np.argmax(neighbor_speed)
-                self.taken_actions[packet.event_ref.identifier] = (None, opt_neighbors[action][1].identifier)
-                return opt_neighbors[action][1]
-        # no candidate neighbor? -> no
-        else:
-            # q-learning submodule
-            if self.simulator.rnd_routing.rand() <= self.sigma:
-                # random choice
-                action = self.simulator.rnd_routing.randint(0, len(opt_neighbors))
-                self.taken_actions[packet.event_ref.identifier] = (None, opt_neighbors[action][1].identifier)
-                return opt_neighbors[action][1]
-            else:
-                # choose the maximum based on the q_table
-                # Todo: give a feedback to the previous drone and take the best
-                delivery_delay = self.simulator.cur_step - packet.event_ref.current_time
-                for drone in self.simulator.drones:
-                    drone.routing_algorithm.feedback(self.drone,
-                                                            packet.event_ref.identifier,
-                                                            delivery_delay,
-                                                            1,
-                                                            50)
-                neighbors_idx = [d.identifier for _, d in opt_neighbors]
-                q_values = self.qtable[neighbors_idx]
-                action = np.argmax(q_values)
-                self.taken_actions[packet.event_ref.identifier] = (None, neighbors_idx[action])
-                return opt_neighbors[action][1]
+                                                        outcome,
+                                                        None,
+                                                        None,
+                                                        delay)         # self, drone, id_event, delay, outcome, reward, E_i, hop_delay
+            
+        if action is not None:
+            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier)   # save the taken action and the list of neighbors at this moment. 
+                                                                                                                    
+            return opt_neighbors[action][1]
+
+        
+
         

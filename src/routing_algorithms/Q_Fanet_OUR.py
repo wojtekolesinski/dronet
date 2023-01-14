@@ -7,13 +7,13 @@ from src.utilities import utilities
 import src.utilities.config as config
 
 
-class Q_Fanet(BASE_routing):
+class Q_Fanet_OUR(BASE_routing):
 
     def __init__(self, drone, simulator):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
         self.taken_actions = {}  # id event : (old_state, old_action)
         self.look_back = 10 # to tune
-        self.weights = np.asarray([math.pow(i, 5) for i in range(self.look_back + 1, 1, -1)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
+        self.weights = np.asarray([i for i in range(self.look_back + 1, 1, -1)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
         self.weights /= np.sum(self.weights, dtype=np.float64)
         self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
@@ -41,13 +41,14 @@ class Q_Fanet(BASE_routing):
 
         if id_event in self.taken_actions:
             
-            state, action, old_neighbors = self.taken_actions[id_event]
+            state, action = self.taken_actions[id_event]
             # print("got reward from action", id_event)
             del self.taken_actions[id_event]
             weights_reward_mult = np.matmul(self.weights.T, self.rewards_history[action, :].flatten())
             reward = self.get_reward(outcome)    # formula 3
-
             self.qtable[action] = (1 - self.lr) * (weights_reward_mult) + self.lr * reward
+
+            # print(self.qtable)
 
             raw_slice = self.rewards_history[action, :]
             raw_slice = np.roll(raw_slice, 1)
@@ -69,7 +70,7 @@ class Q_Fanet(BASE_routing):
         # this is not the same delay as the paper because we don't have access to the queue delay.
         drone_position = self.drone.coords
         neighbor_position = hello_packet.cur_pos
-        wave_speed = 3000000 # m/s
+        wave_speed = 300000 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
         packet_size =  sys.getsizeof(packet) * 8
         distance = utilities.euclidean_distance(drone_position, neighbor_position)
@@ -130,7 +131,7 @@ class Q_Fanet(BASE_routing):
                 [hp.cur_pos[0] + hp.speed * math.cos(angles[idx]) * (t3[idx]-t1[idx]),       # x
                 hp.cur_pos[1] + hp.speed * math.sin(angles[idx]) * (t3[idx]-t1[idx])])       # y   
                                                                                     for idx, hp in enumerate(hello_packets)])   # for each hp I calculate x and y
-        
+        # estimated_position = [(hp.cur_pos[0], hp.cur_pos[1]) for hp in hello_packets]
         # print("Real" , [drone.coords for hp, drone in opt_neighbors], "\nEstimated", estimated_position, "-"*10, "\n")
 
         # formula 20
@@ -145,7 +146,8 @@ class Q_Fanet(BASE_routing):
     
         actual_velocities = (d_iD - neighbor_dist_from_depot) / delays
         # print(actual_velocities)
-        candidate_neighbors = np.where((actual_velocities - V) > 0)[0]
+        candidate_neighbors = np.where((actual_velocities - V) > 0)[0] # np.where((neighbor_dist_from_depot <= d_iD))[0]
+
         
         if len(candidate_neighbors) > 0:
             #Q_Learning sub-module
@@ -188,7 +190,7 @@ class Q_Fanet(BASE_routing):
                                                         delay)         # self, drone, id_event, delay, outcome, reward, E_i, hop_delay
             
         if action is not None:
-            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier, [drone.identifier for hp, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
+            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier)   # save the taken action and the list of neighbors at this moment. 
                                                                                                                     
             return opt_neighbors[action][1]
 
