@@ -263,6 +263,9 @@ class Drone(Entity):
         self.come_back_to_mission = False  # if i'm coming back to my applicative mission
         self.last_move_routing = False  # if in the last step i was moving to depot
         self.transmission_rate = 2e5 + utilities.sample_gaussian(0, 1e3) # 20_000 per sec.
+        self.accumulated_moving_energy = 0
+        self.accumulated_hello_energy = 0
+        self.accumulated_send_energy = 0
 
         # dynamic parameters
         self.tightest_event_deadline = None  # used later to check if there is an event that is about to expire
@@ -387,10 +390,13 @@ class Drone(Entity):
     def decrease_energy(self, action):
         if action == "transmission":
             self.residual_energy -= 100
+            self.accumulated_send_energy += 100
         elif action == "move":
             self.residual_energy -= self.speed * 100
+            self.accumulated_moving_energy += self.speed * 100
         elif action == "hello":
             self.residual_energy -= 10
+            self.accumulated_hello_energy += 10
 
     def move(self, time):
         """ Move the drone to the next point if self.move_routing is false, else it moves towards the depot. 
