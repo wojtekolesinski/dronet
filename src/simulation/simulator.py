@@ -148,7 +148,7 @@ class Simulator:
             the current simulation. It is useful to print
             the simulation progress
         """
-        return "sim_seed" + str(self.seed) + "drones" + str(self.n_drones) + "_step"
+        return "sim_seed" + str(self.seed) + "drones" + str(self.n_drones)
 
     def __plot(self, cur_step):
         """ plot the simulation """
@@ -175,7 +175,7 @@ class Simulator:
 
         # rendering
         self.draw_manager.update(show=self.show_plot, save=config.SAVE_PLOT,
-                                 filename=self.sim_save_file + str(cur_step) + ".png")
+                                 filename=self.sim_save_file + ".png")
 
     def increase_meetings_probs(self, drones, cur_step):
         """ Increases the probabilities of meeting someone. """

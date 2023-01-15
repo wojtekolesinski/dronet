@@ -173,9 +173,9 @@ class QMR(BASE_routing):
         # 
         delays = np.array([self.get_delay(hp, packet) for hp in hello_packets])
         drone2delay = {d.identifier: self.get_delay(hp, packet) for hp, d in opt_neighbors}
-
+        
         t1 = np.asarray([hp.time_step_creation * config.TS_DURATION for hp in hello_packets])   # in s
-        t2 = self.simulator.cur_step * config.TS_DURATION      # in s
+        t2 = self.simulator.cur_step * config.TS_DURATION   #current moment in s
         #formula 15  time when packet will arrive at node j
         t3 = np.asarray([t2 + d for d in delays]) # hardcoded values. If each step is about 0.02 sec, then we are considernig t1 + 0.1 and t1 + 0.16 seconds after the current time.
                     # Each drone wil travel about 2.28m each timestep if he is travelling at 114 m/s (speed of a military drone)
@@ -278,9 +278,9 @@ class QMR(BASE_routing):
                                                         None,
                                                         E_i,
                                                         delay)         # self, drone, id_event, delay, outcome, reward, E_i, hop_delay
-            
+        
         if action is not None:
-            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, action, [drone.identifier for hp, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
+            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, action, [drone.identifier for _, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
                                                                                                                         # When the reward comes, I can use this to calculate the adaptive discount factor.
             for _, drone in opt_neighbors:
                 if drone.identifier == action:
