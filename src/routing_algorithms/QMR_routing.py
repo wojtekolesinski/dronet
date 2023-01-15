@@ -15,6 +15,7 @@ class QMR(BASE_routing):
         """
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
         self.taken_actions = {}  # id event : (old_state, old_action)
+        self.random = np.random.RandomState(self.simulator.seed)
         self.look_back = 1000 # to tune
         self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
@@ -110,7 +111,7 @@ class QMR(BASE_routing):
         drone_position = self.drone.coords
         neighbor_position = hello_packet.cur_pos
         # We know that waves may be a lil bit faster that that, but we don't care cuz it works better like dis
-        wave_speed = 3000 # m/s
+        wave_speed = 300 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
         packet_size =  sys.getsizeof(packet) * 8    #  size of packet in bits
         distance = utilities.euclidean_distance(drone_position, neighbor_position)      #  distance
@@ -128,8 +129,8 @@ class QMR(BASE_routing):
         """
         # get the one hop delay based on the history.
         history = self.delay_history[hop]
-        var = np.var(history[:np.where(history == 0)[0][0]])
-        one_hop_delay = 0.3 if var <= 0.01 else (delay - np.mean(history)) / var
+        var = np.var(history)
+        one_hop_delay = 0.3 if var <= 0.1 else (delay - np.mean(history)) / var
         return one_hop_delay, var
     
 
@@ -154,7 +155,6 @@ class QMR(BASE_routing):
         if len(opt_neighbors) <= 0:
             return
 
-
         # Final action
         action = None
         # outcome to send as feedback to the previous link
@@ -168,12 +168,14 @@ class QMR(BASE_routing):
         
         # get th elist of hello packets
         hello_packets = np.asarray([hp for hp, _ in opt_neighbors])
+        neighbors_ids = np.asarray([d.identifier for _, d in opt_neighbors])
         
         # 
         delays = np.array([self.get_delay(hp, packet) for hp in hello_packets])
-
+        drone2delay = {d.identifier: self.get_delay(hp, packet) for hp, d in opt_neighbors}
+        
         t1 = np.asarray([hp.time_step_creation * config.TS_DURATION for hp in hello_packets])   # in s
-        t2 = self.simulator.cur_step * config.TS_DURATION      # in s
+        t2 = self.simulator.cur_step * config.TS_DURATION   #current moment in s
         #formula 15  time when packet will arrive at node j
         t3 = np.asarray([t2 + d for d in delays]) # hardcoded values. If each step is about 0.02 sec, then we are considernig t1 + 0.1 and t1 + 0.16 seconds after the current time.
                     # Each drone wil travel about 2.28m each timestep if he is travelling at 114 m/s (speed of a military drone)
@@ -188,16 +190,16 @@ class QMR(BASE_routing):
         # formula 12 (Requested Velocity to transmit the data packet)
         V = d_iD / deadlines  # m/s
         
-        # Angles
-        angles = np.asarray([np.arctan2(hp.next_target[1] -  hp.cur_pos[1], hp.next_target[0] -  hp.cur_pos[0]) for hp in hello_packets])
-        
-        
-        # formula 13 & 14 predicted positions of neighbor
-        estimated_position = np.asarray([
-            np.asarray(
-                [hp.cur_pos[0] + hp.speed * math.cos(angles[idx]) * (t3[idx]-t1[idx]),       # x
-                hp.cur_pos[1] + hp.speed * math.sin(angles[idx]) * (t3[idx]-t1[idx])])       # y   
-                                                                                    for idx, hp in enumerate(hello_packets)])   # for each hp I calculate x and y
+        estimated_position = []
+        for idx, hp in enumerate(hello_packets):
+            p0 = hp.cur_pos
+            p1 = hp.next_target
+            all_distance = utilities.euclidean_distance(p0, p1)
+            distance = (t3[idx]-t1[idx]) * hp.speed
+            t = distance / all_distance
+            pred = ((1 - t) * p0[0] + t * p1[0]), ((1 - t) * p0[1] + t * p1[1])
+            estimated_position.append(pred)
+        estimated_position = np.asarray(estimated_position)
         
         
         
@@ -205,48 +207,48 @@ class QMR(BASE_routing):
         dist_dr = lambda x: utilities.euclidean_distance(drone_position, x)
         distances = np.asarray([dist_dr(pos) for pos in estimated_position])
 
-
         # formula 16
         dist = lambda x: utilities.euclidean_distance(depot_position, x)
         neighbor_dist_from_depot =  np.asarray([dist(pos) if dist_dr(pos) <= config.COMMUNICATION_RANGE_DRONE else 69420 for pos in estimated_position])
         
         
+        # formula 18 Link Quality
+        d_f = np.exp(- 0.2 * (distances/config.COMMUNICATION_RANGE_DRONE))
+        d_r = np.exp(- 0.1 * (distances/config.COMMUNICATION_RANGE_DRONE))
+        LQ = d_f * d_r
+        
+        # formula 19 The coefficient of neighbor relationship
+        M = np.asarray([1 - distance / config.COMMUNICATION_RANGE_DRONE if distance <= config.COMMUNICATION_RANGE_DRONE else 0 for distance in distances])
+        # formula 17 weights
+        k = M * LQ
+
+        
         actual_velocities = (d_iD - neighbor_dist_from_depot) / delays
         
-        candidate_neighbors = np.where((actual_velocities - V) > 0)[0]
+        where_v_greater_than_min_v = np.where((actual_velocities - V) > 0)[0]
+        
+        candidate_neighbors = neighbors_ids[where_v_greater_than_min_v]
         
         if len(candidate_neighbors) > 0:
-            
-            # formula 18 Link Quality
-            d_f = np.exp(- 0.2 * (distances/config.COMMUNICATION_RANGE_DRONE))
-            d_r = np.exp(- 0.1 * (distances/config.COMMUNICATION_RANGE_DRONE))
-            LQ = d_f * d_r
-            
-            # formula 19 The coefficient of neighbor relationship
-            M = np.asarray([1 - distance / config.COMMUNICATION_RANGE_DRONE if distance <= config.COMMUNICATION_RANGE_DRONE else 0 for distance in distances])
-            # formula 17 weights
-            k = M * LQ
-
             # get valid elements
 
-            neighbors_ids = np.array([d.identifier for hp, d in opt_neighbors])[candidate_neighbors]
+            mask = np.ones(self.simulator.n_drones, dtype = bool)
+            mask[candidate_neighbors] = False
 
-            valid_q_values = self.qtable[neighbors_ids]
-            valid_k = k[candidate_neighbors]
+            valid_q_values = k[where_v_greater_than_min_v]*self.qtable[candidate_neighbors]
+            possible_actions = np.ma.array(self.qtable, mask=mask)
+            possible_actions[possible_actions.mask == False] = valid_q_values
 
             # formula 21 choose the best drone
-
-            selected_valid_drone = np.argmax(valid_q_values)
-            best_q = candidate_neighbors[selected_valid_drone]
-
-            selected_valid_drone = np.argmax(valid_k * valid_q_values)
-            action = candidate_neighbors[selected_valid_drone]
+            random_tie_breaking = np.flatnonzero(possible_actions == possible_actions.max())
+            action = self.random.choice(random_tie_breaking)
+            #action = candidate_neighbors[selected_valid_drone]
 
             # print("Q_value", best_q, "Weighted Q_value", action)
             
             # send feedback to previous drone
             outcome = 0
-            delay = delays[action]
+            delay = drone2delay[action]
 
             for idx, (hp, drone) in enumerate(opt_neighbors):
                 self.add_delay_to_history(drone.identifier, delays[idx])
@@ -276,8 +278,10 @@ class QMR(BASE_routing):
                                                         None,
                                                         E_i,
                                                         delay)         # self, drone, id_event, delay, outcome, reward, E_i, hop_delay
-            
+        
         if action is not None:
-            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier, [drone.identifier for hp, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
+            self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, action, [drone.identifier for _, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
                                                                                                                         # When the reward comes, I can use this to calculate the adaptive discount factor.
-            return opt_neighbors[action][1]
+            for _, drone in opt_neighbors:
+                if drone.identifier == action:
+                    return drone
