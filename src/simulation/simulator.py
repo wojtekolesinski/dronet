@@ -176,6 +176,8 @@ class Simulator:
         # rendering
         self.draw_manager.update(show=self.show_plot, save=config.SAVE_PLOT,
                                  filename=self.sim_save_file + ".png")
+        
+
 
     def increase_meetings_probs(self, drones, cur_step):
         """ Increases the probabilities of meeting someone. """

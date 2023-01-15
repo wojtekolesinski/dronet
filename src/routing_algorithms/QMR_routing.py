@@ -187,11 +187,8 @@ class QMR(BASE_routing):
                     # in s
         d_iD = utilities.euclidean_distance(drone_position, depot_position)
         
-        # formula 11 (we made it different)
-        TTL = config.PACKETS_MAX_TTL - packet.get_TTL()
-
         # formula 12 (Requested Velocity to transmit the data packet)
-        V = d_iD / (packet.event_ref.deadline)  # m/s
+        V = d_iD / ((packet.event_ref.deadline + 1 - self.simulator.cur_step) * config.TS_DURATION)  # m/s
         
         estimated_position = []
         for idx, hp in enumerate(hello_packets):
@@ -257,13 +254,13 @@ class QMR(BASE_routing):
             #if there are neighbors whose actual velocity is greater than 0
             penalty_condition = np.where(actual_velocities > 0)[0]
             if len(penalty_condition) > 0:
-                action = np.argmax(actual_velocities)
+                n = np.argmax(actual_velocities)
+                action = neighbors_ids[n]
                 outcome = 0 
-                delay = delays[action]
+                delay = drone2delay[action]
             else:   #penalty mechanism
                 outcome = -1 
                 delay = None
-            pass
 
 
         # send feedback to previous drone
@@ -281,6 +278,9 @@ class QMR(BASE_routing):
         if action is not None:
             self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, action, [drone.identifier for _, drone in opt_neighbors])   # save the taken action and the list of neighbors at this moment. 
                                                                                                                         # When the reward comes, I can use this to calculate the adaptive discount factor.
+            # formula 11
+            packet.decrease_deadline(delay)
+
             for _, drone in opt_neighbors:
                 if drone.identifier == action:
                     return drone

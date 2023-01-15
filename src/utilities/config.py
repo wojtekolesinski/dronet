@@ -44,7 +44,7 @@ EXPERIMENTS_DIR = "data/experiments/"  # output data : the results of the simula
 
 # drawaing
 PLOT_SIM = False      # bool: whether to plot or not the simulation.
-WAIT_SIM_STEP = 0.2     # float: seconds, pauses the rendering for 'DELAY_PLOT' seconds.
+WAIT_SIM_STEP = 0.0     # float: seconds, pauses the rendering for 'DELAY_PLOT' seconds.
 SKIP_SIM_STEP = 1      # int: steps, plot the simulation every 'RENDERING_STEP' steps. At least 1.
 DRAW_SIZE = 700       # int: size of the drawing window.
 IS_SHOW_NEXT_TARGET_VEC = True  # bool : whether show the direction and next target of the drone
@@ -76,7 +76,7 @@ COMMUNICATION_RANGE_DRONE = 150  # float: meters, communication range of the dro
 SENSING_RANGE_DRONE = 0        # float: meters, the sensing range of the drones.
 DRONE_SPEED = 8                 # float: m/s, drone speed.
 DRONE_MAX_BUFFER_SIZE = 10000     # int: max number of packets in the buffer of a drone.
-DRONE_MAX_ENERGY = 10000000           # int: max energy of a drone.
+DRONE_MAX_ENERGY = 1000000000           # int: max energy of a drone.
 
 # depot
 DEPOT_COMMUNICATION_RANGE = 150  # float: meters, communication range of the depot.
@@ -111,7 +111,7 @@ CHANNEL_ERROR_TYPE = ChannelError.GAUSSIAN
 
 COMMUNICATION_P_SUCCESS = 1   # float: probability to have success in a communication.
 GUASSIAN_SCALE = .9            # float [0,1]: scale the error probability of the guassian -> success * GUASSIAN_SCALER
-PACKETS_MAX_TTL = 200         # float: threshold in the maximum number of hops. Causes loss of packets.
+PACKETS_MAX_TTL = 10         # float: threshold in the maximum number of hops. Causes loss of packets.
 PACKETS_SIZE = 100         # int: size of the packet in bytes
 RETRANSMISSION_DELAY = 10     # int: how many time steps to wait before transmit again (for k retransmissions). # ---  #delta_k
 

@@ -115,11 +115,8 @@ class Q_Fanet(BASE_routing):
                     # in s
         d_iD = utilities.euclidean_distance(drone_position, depot_position)
         
-        # formula 11 (we made it different) 
-        TTL = config.PACKETS_MAX_TTL - packet.get_TTL()
-
         # formula 12 (Requested Velocity to transmit the data packet)
-        V = d_iD / (packet.event_ref.deadline)  # m/s
+        V = d_iD / ((packet.event_ref.deadline + 1 - self.simulator.cur_step) * config.TS_DURATION)  # m/s
         
         # Angles
         angles = np.asarray([np.arctan2(hp.next_target[1] -  hp.cur_pos[1], hp.next_target[0] -  hp.cur_pos[0]) for hp in hello_packets])
@@ -183,6 +180,7 @@ class Q_Fanet(BASE_routing):
         if action is not None:
             self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier)   # save the taken action and the list of neighbors at this moment. 
                                                                                                                     
+            packet.decrease_deadline(delay)
             return opt_neighbors[action][1]
 
         

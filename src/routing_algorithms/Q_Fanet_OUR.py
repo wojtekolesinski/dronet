@@ -42,14 +42,14 @@ class Q_Fanet_OUR(BASE_routing):
         if id_event in self.taken_actions:
             
             state, action = self.taken_actions[id_event]
-            # print("got reward from action", id_event)
             del self.taken_actions[id_event]
+
+            # update qtable
             weights_reward_mult = np.matmul(self.weights.T, self.rewards_history[action, :].flatten())
             reward = self.get_reward(outcome)    # formula 3
             self.qtable[action] = (1 - self.lr) * (weights_reward_mult) + self.lr * reward
 
-            # print(self.qtable)
-
+            # save the rewards history
             raw_slice = self.rewards_history[action, :]
             raw_slice = np.roll(raw_slice, 1)
             raw_slice[0] = reward
@@ -57,6 +57,9 @@ class Q_Fanet_OUR(BASE_routing):
             
             
     def get_reward(self, o):
+        """
+        Rewards based n the paper
+        """
         rew = 0
         if o > 0:
             rew = 100
@@ -72,8 +75,8 @@ class Q_Fanet_OUR(BASE_routing):
         drone_position = self.drone.coords
         neighbor_position = hello_packet.cur_pos
         wave_speed = 300000 # m/s
-        # for each neighbor I divide the difference in distance to the depot by the transmission time
-        packet_size =  packet.get_packet_size() * 8  #  size of packet in bits sys.getsizeof(packet) * 8  
+        # I divide the difference in distance to the depot by the transmission time
+        packet_size =  packet.get_packet_size() * 8
         distance = utilities.euclidean_distance(drone_position, neighbor_position)
         
         # consider transmission and propagation delay
@@ -115,11 +118,8 @@ class Q_Fanet_OUR(BASE_routing):
                     # in s
         d_iD = utilities.euclidean_distance(drone_position, depot_position)
         
-        # formula 11 (we made it different) 
-        TTL = config.PACKETS_MAX_TTL - packet.get_TTL()
-
         # formula 12 (Requested Velocity to transmit the data packet)
-        V = d_iD / (packet.event_ref.deadline)  # m/s
+        V = d_iD / ((packet.event_ref.deadline + 1 - self.simulator.cur_step) * config.TS_DURATION)  # m/s
         
         # Angles
         angles = np.asarray([np.arctan2(hp.next_target[1] -  hp.cur_pos[1], hp.next_target[0] -  hp.cur_pos[0]) for hp in hello_packets])
@@ -163,7 +163,8 @@ class Q_Fanet_OUR(BASE_routing):
            
             action = candidate_neighbors[c_n]
             
-            # apply reward function
+            # apply
+            #  reward function
             outcome = 0
 
         else:
@@ -193,6 +194,9 @@ class Q_Fanet_OUR(BASE_routing):
         if action is not None:
             self.taken_actions[packet.event_ref.identifier] = (self.drone.identifier, opt_neighbors[action][1].identifier)   # save the taken action and the list of neighbors at this moment. 
                                                                                                                     
+
+            packet.decrease_deadline(delay)
+
             return opt_neighbors[action][1]
 
         
