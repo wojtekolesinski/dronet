@@ -114,7 +114,7 @@ class QMR(BASE_routing):
         # We know that waves may be a lil bit faster that that, but we don't care cuz it works better like dis
         wave_speed = 300000 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
-        packet_size =  sys.getsizeof(packet) * 8    #  size of packet in bits
+        packet_size =  packet.get_packet_size() * 8  #  size of packet in bits sys.getsizeof(packet) * 8  
         distance = utilities.euclidean_distance(drone_position, neighbor_position)      #  distance
         
         # calculate, sum and return transmission and propagation delay

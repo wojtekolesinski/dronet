@@ -99,6 +99,7 @@ class Packet(Entity):
         self.__max_TTL = self.simulator.packets_max_ttl
         self.number_retransmission_attempt = 0
         self.accumulated_delay = 0
+        self.packet_size = utilities.sample_gaussian(config.PACKETS_SIZE,20)
 
         # self.hops = set()  # All the drones that have received/transmitted the packets
         self.last_2_hops = []
@@ -112,6 +113,9 @@ class Packet(Entity):
         # if the packet was sent with move routing or not
         self.is_move_packet = None
 
+    def get_packet_size(self):
+        return self.packet_size
+        
     def distance_from_depot(self):
         return utilities.euclidean_distance(self.simulator.depot_coordinates, self.coords)
 

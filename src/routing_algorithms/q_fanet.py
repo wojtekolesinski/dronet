@@ -72,7 +72,7 @@ class Q_Fanet(BASE_routing):
         neighbor_position = hello_packet.cur_pos
         wave_speed = 300000 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
-        packet_size =  sys.getsizeof(packet) * 8
+        packet_size =  packet.get_packet_size() * 8  #  size of packet in bits sys.getsizeof(packet) * 8  
         distance = utilities.euclidean_distance(drone_position, neighbor_position)
         
         # consider transmission and propagation delay
