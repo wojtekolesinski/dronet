@@ -55,6 +55,7 @@ class Q_Fanet(BASE_routing):
             raw_slice[0] = reward
             self.rewards_history[action, :] = raw_slice
 
+
     def get_reward(self, o):
         rew = 0
         if o > 0:
@@ -116,10 +117,9 @@ class Q_Fanet(BASE_routing):
         
         # formula 11 (we made it different) 
         TTL = config.PACKETS_MAX_TTL - packet.get_TTL()
-        deadlines = np.asarray([TTL * config.TS_DURATION - d for d in delays])
 
         # formula 12 (Requested Velocity to transmit the data packet)
-        V = d_iD / deadlines  # m/s
+        V = d_iD / (packet.event_ref.deadline)  # m/s
         
         # Angles
         angles = np.asarray([np.arctan2(hp.next_target[1] -  hp.cur_pos[1], hp.next_target[0] -  hp.cur_pos[0]) for hp in hello_packets])

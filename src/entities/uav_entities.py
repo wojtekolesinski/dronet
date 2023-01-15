@@ -144,6 +144,7 @@ class Packet(Entity):
 
     def increase_TTL_hops(self):
         self.__TTL += 1
+        self.event_ref.deadline -= 3
     
     def get_TTL(self):
         return self.__TTL

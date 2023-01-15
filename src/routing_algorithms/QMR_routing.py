@@ -85,6 +85,7 @@ class QMR(BASE_routing):
 
             # update the q_table    formula 1
             self.qtable[action] = self.qtable[action] + adaptive_lr * (reward + disc_fact * np.max(drone.routing_algorithm.qtable) - self.qtable[action])
+            # print(self.qtable)
             
 
     def get_reward(self, o, delay, E_j):
@@ -186,12 +187,11 @@ class QMR(BASE_routing):
                     # in s
         d_iD = utilities.euclidean_distance(drone_position, depot_position)
         
-        # formula 11 (we made it different) 
+        # formula 11 (we made it different)
         TTL = config.PACKETS_MAX_TTL - packet.get_TTL()
-        deadlines = np.asarray([TTL * config.TS_DURATION - d for d in delays])
 
         # formula 12 (Requested Velocity to transmit the data packet)
-        V = d_iD / deadlines  # m/s
+        V = d_iD / (packet.event_ref.deadline)  # m/s
         
         estimated_position = []
         for idx, hp in enumerate(hello_packets):
@@ -203,8 +203,7 @@ class QMR(BASE_routing):
             pred = ((1 - t) * p0[0] + t * p1[0]), ((1 - t) * p0[1] + t * p1[1])
             estimated_position.append(pred)
         estimated_position = np.asarray(estimated_position)
-        
-        
+
         
         # formula 20
         dist_dr = lambda x: utilities.euclidean_distance(drone_position, x)
@@ -244,13 +243,8 @@ class QMR(BASE_routing):
 
             # formula 21 choose the best drone
             random_tie_breaking = np.flatnonzero(possible_actions == possible_actions.max())
-            if len(random_tie_breaking) <= 0:
-                pass
-            action = self.random.choice(random_tie_breaking)
-            #action = candidate_neighbors[selected_valid_drone]
-
-            # print("Q_value", best_q, "Weighted Q_value", action)
             
+            action = self.random.choice(random_tie_breaking)            
             # send feedback to previous drone
             outcome = 0
             delay = drone2delay[action]
@@ -290,3 +284,4 @@ class QMR(BASE_routing):
             for _, drone in opt_neighbors:
                 if drone.identifier == action:
                     return drone
+
