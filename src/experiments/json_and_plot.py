@@ -173,7 +173,11 @@ if __name__ == "__main__":
     parser.add_argument("-e_s", dest='end_seed', action="store", default = 30, type=int,
                         help="the end seed to use in the simualtions"   
                              + "-notice that the simulations will run for seed in (i_s, e_s)")
+<<<<<<< HEAD
     parser.add_argument("-exp_suffix", dest='alg_exp_suffix', action="append", default= ["RND", "GEO", "QMR"] , type=list,
+=======
+    parser.add_argument("-exp_suffix", dest='alg_exp_suffix', action="append", default= ["RND", "GEO", "QMR", "Q_FANET", "Q_FANET_OUR"] , type=list,
+>>>>>>> 9d559797d54f248868f8e7783023a14ee0ae425b
                         help="list of the routing algorithm suffix to read exp data: es: K_ROUTING_500 or MOVE")
      
      
