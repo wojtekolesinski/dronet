@@ -155,7 +155,8 @@ class Q_Fanet_OUR(BASE_routing):
             # random value > greedy value
             if self.simulator.rnd_routing.rand() > self.epsilon:
                 # select value with highest q
-                c_n = np.argmax(self.qtable[candidate_neighbors])
+                neighbors_ids = np.array([d.identifier for hp, d in opt_neighbors])[candidate_neighbors]
+                c_n = np.argmax(self.qtable[neighbors_ids])
             else:
                 # select random value
                 c_n = self.simulator.rnd_routing.randint(0, len(candidate_neighbors))
