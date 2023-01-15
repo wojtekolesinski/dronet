@@ -12,8 +12,8 @@ class Q_Fanet(BASE_routing):
     def __init__(self, drone, simulator):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
         self.taken_actions = {}  # id event : (old_state, old_action)
-        self.look_back = 10 # to tune
-        self.weights = np.asarray([i for i in range(self.look_back + 1, 1, -1)], dtype=np.float64) # not sure about this. The paper does not say how to calculate this
+        self.look_back = 10 #  Lookback value
+        self.weights = np.asarray([i for i in range(self.look_back + 1, 1, -1)], dtype=np.float64) #  Array of weights. 
         self.weights /= np.sum(self.weights, dtype=np.float64)
         self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
@@ -145,7 +145,8 @@ class Q_Fanet(BASE_routing):
             # random value > greedy value
             if self.simulator.rnd_routing.rand() > self.epsilon:
                 # select value with highest q
-                c_n = np.argmax(self.qtable[candidate_neighbors])
+                neighbors_ids = np.array([d.identifier for hp, d in opt_neighbors])[candidate_neighbors]
+                c_n = np.argmax(self.qtable[neighbors_ids])
             else:
                 # select random value
                 c_n = self.simulator.rnd_routing.randint(0, len(candidate_neighbors))
