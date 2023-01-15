@@ -16,10 +16,10 @@ class QMR(BASE_routing):
         BASE_routing.__init__(self, drone=drone, simulator=simulator)
         self.taken_actions = {}  # id event : (old_state, old_action)
         self.random = np.random.RandomState(self.simulator.seed)
-        self.look_back = 1000 # to tune
+        self.look_back = 10 # to tune
         self.qtable = np.zeros(shape=(self.simulator.n_drones)) + 0.5
         self.rewards_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))
-        self.delay_history = np.zeros(shape=(self.simulator.n_drones, self.look_back))    # history delay used for normalized one-hop delay
+        self.delay_history = [[0] for _ in range(self.simulator.n_drones)]# np.zeros(shape=(self.simulator.n_drones, self.look_back))    # history delay used for normalized one-hop delay
         self.one_hop_del_weight = 0.6
 
 
@@ -70,7 +70,8 @@ class QMR(BASE_routing):
             else:
                 # If the feedback comes from the environment (a packet expired or is arrived to the depot), 
                 # we can't calculate an actual delay, so we use the past delays.
-                normalized_one_hop_delay, variance = self.get_normalized_one_hop_delay(action, self.delay_history[drone.identifier, 0])
+                normalized_one_hop_delay, variance = self.get_normalized_one_hop_delay(action, self.delay_history[drone.identifier][-1])
+            
             
             # calculate adaptive learning rate   formula 5
             adaptive_lr = 0.3 if variance == 0 else 1 - np.exp(-normalized_one_hop_delay)
@@ -111,7 +112,7 @@ class QMR(BASE_routing):
         drone_position = self.drone.coords
         neighbor_position = hello_packet.cur_pos
         # We know that waves may be a lil bit faster that that, but we don't care cuz it works better like dis
-        wave_speed = 300 # m/s
+        wave_speed = 300000 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
         packet_size =  sys.getsizeof(packet) * 8    #  size of packet in bits
         distance = utilities.euclidean_distance(drone_position, neighbor_position)      #  distance
@@ -128,9 +129,11 @@ class QMR(BASE_routing):
         Get the normalized one hop delay and variance based on history.
         """
         # get the one hop delay based on the history.
-        history = self.delay_history[hop]
-        var = np.var(history)
-        one_hop_delay = 0.3 if var <= 0.1 else (delay - np.mean(history)) / var
+        history = np.asarray(self.delay_history[hop] + [delay])
+
+        var = np.std(history)
+        mean = np.mean(history)
+        one_hop_delay = np.abs((delay - mean) / var)
         return one_hop_delay, var
     
 
@@ -138,10 +141,10 @@ class QMR(BASE_routing):
         """
         Add a delay to the history.
         """
-        history = self.delay_history[drone_id]
-        history = np.roll(history, 1)
-        history[0] = delay
-        self.delay_history[drone_id, :] = history
+        self.delay_history[drone_id].append(delay)
+        # history = np.roll(history, 1)
+        # history[0] = delay
+        # self.delay_history[drone_id, :] = history
 
 
     def relay_selection(self, opt_neighbors: list, packet):
@@ -241,6 +244,8 @@ class QMR(BASE_routing):
 
             # formula 21 choose the best drone
             random_tie_breaking = np.flatnonzero(possible_actions == possible_actions.max())
+            if len(random_tie_breaking) <= 0:
+                pass
             action = self.random.choice(random_tie_breaking)
             #action = candidate_neighbors[selected_valid_drone]
 

@@ -110,7 +110,7 @@ class QMR(BASE_routing):
         drone_position = self.drone.coords
         neighbor_position = hello_packet.cur_pos
         # We know that waves may be a lil bit faster that that, but we don't care cuz it works better like dis
-        wave_speed = 300 # m/s
+        wave_speed = 300000 # m/s
         # for each neighbor I divide the difference in distance to the depot by the transmission time
         packet_size =  sys.getsizeof(packet) * 8    #  size of packet in bits
         distance = utilities.euclidean_distance(drone_position, neighbor_position)      #  distance
@@ -128,8 +128,8 @@ class QMR(BASE_routing):
         """
         # get the one hop delay based on the history.
         history = self.delay_history[hop]
-        var = var = np.var(history[:np.where(history == 0)[0][0]])
-        one_hop_delay = 0.3 if var <= 0.1 else (delay - np.mean(history)) / var
+        var = np.abs(np.var(history[:np.where(history == 0)[0][0]]))
+        one_hop_delay = 0.3 if var <= 0.1 else (delay - np.mean(history[:np.where(history == 0)[0][0]])) / var
         return one_hop_delay, var
     
 
