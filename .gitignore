@@ -4,5 +4,8 @@ data/plots/evaluation_tests/*
 */*/__pycache__
 .idea
 .DS_Store
+.venv*
+data/
+.python-version
 
 
