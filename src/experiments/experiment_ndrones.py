@@ -1,4 +1,4 @@
-from src.utilities.experiments_config import *
+import src.utilities.experiments_config as conf
 from src.experiments.parser.parser import command_line_parser
 from src.utilities import config
 from src.simulation.simulator import Simulator
@@ -15,36 +15,31 @@ def sim_setup(n_drones, seed, algorithm):
     """
 
     return Simulator(
-        len_simulation=len_simulation,
-        time_step_duration=time_step_duration,
+        len_simulation=conf.len_simulation,
+        time_step_duration=conf.time_step_duration,
         seed=seed,
         n_drones=n_drones,
-        env_width=env_width,
-        env_height=env_height,
-
-        drone_com_range=drone_com_range,
-        drone_sen_range=drone_sen_range,
-        drone_speed=drone_speed,
-        drone_max_buffer_size=drone_max_buffer_size,
-        drone_max_energy=drone_max_energy,
-        drone_retransmission_delta=drone_retransmission_delta,
-        drone_communication_success=drone_communication_success,
-        event_generation_delay=event_generation_delay,
-
-        depot_com_range=depot_com_range,
-        depot_coordinates=depot_coordinates,
-
-        event_duration=event_duration,
-        event_generation_prob=event_generation_prob,
-        packets_max_ttl=packets_max_ttl,
+        env_width=conf.env_width,
+        env_height=conf.env_height,
+        drone_com_range=conf.drone_com_range,
+        drone_sen_range=conf.drone_sen_range,
+        drone_speed=conf.drone_speed,
+        drone_max_buffer_size=conf.drone_max_buffer_size,
+        drone_max_energy=conf.drone_max_energy,
+        drone_retransmission_delta=conf.drone_retransmission_delta,
+        drone_communication_success=conf.drone_communication_success,
+        event_generation_delay=conf.event_generation_delay,
+        depot_com_range=conf.depot_com_range,
+        depot_coordinates=conf.depot_coordinates,
+        event_duration=conf.event_duration,
+        event_generation_prob=conf.event_generation_prob,
+        packets_max_ttl=conf.packets_max_ttl,
         routing_algorithm=config.RoutingAlgorithm[algorithm],
         communication_error_type=config.ChannelError.GAUSSIAN,
-        show_plot=show_plot,
-
+        show_plot=conf.show_plot,
         # ML parameters
         simulation_name="",
-        run_experiments = True
-
+        run_experiments=True,
     )
 
 
@@ -60,7 +55,6 @@ def launch_experiments(n_drones, in_seed, out_seed, algorithm):
     """
 
     for seed in range(in_seed, out_seed):
-
         print(f"Running {algorithm} with {n_drones} drones seed {seed}")
 
         simulation = sim_setup(n_drones, seed, algorithm)
@@ -71,7 +65,6 @@ def launch_experiments(n_drones, in_seed, out_seed, algorithm):
 
 
 if __name__ == "__main__":
-
     args = command_line_parser.parse_args()
 
     number_of_drones = args.number_of_drones
