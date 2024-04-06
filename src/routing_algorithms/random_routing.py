@@ -1,5 +1,5 @@
-import src.utilities.utilities as util
-from src.routing_algorithms.BASE_routing import BASE_routing
+import utilities.utilities as util
+from routing_algorithms.BASE_routing import BASE_routing
 
 
 class RandomRouting(BASE_routing):

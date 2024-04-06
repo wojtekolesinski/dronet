@@ -10,7 +10,7 @@ import collections
 import matplotlib
 import sys, os
 sys.path.append(os.getcwd())
-from src.utilities import config
+from utilities import config
 
 from argparse import ArgumentParser
 

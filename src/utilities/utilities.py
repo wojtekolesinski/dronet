@@ -1,6 +1,6 @@
 """ To clean. """
 
-from src.utilities import config
+from utilities import config
 
 import pathlib
 import time
@@ -11,7 +11,7 @@ import numpy as np
 from numpy import random
 import pickle
 from ast import literal_eval as make_tuple
-from src.utilities import random_waypoint_generation
+from utilities import random_waypoint_generation
 
 
 random.seed(42)

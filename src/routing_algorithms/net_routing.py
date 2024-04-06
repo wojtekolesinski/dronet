@@ -1,7 +1,7 @@
 
-import src.utilities.utilities as util
-from src.entities.uav_entities import DataPacket
-from src.simulation.metrics import Metrics
+import utilities.utilities as util
+from entities.uav_entities import DataPacket
+from simulation.metrics import Metrics
 
 
 class MediumDispatcher:

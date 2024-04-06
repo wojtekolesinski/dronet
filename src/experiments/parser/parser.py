@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from src.utilities import config
+from utilities import config
 
 command_line_parser = ArgumentParser()
 

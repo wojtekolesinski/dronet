@@ -1,6 +1,4 @@
-import sys, os
-sys.path.append(os.getcwd())
-from src.simulation.simulator import Simulator
+from simulation.simulator import Simulator
 
 # os.environ["SDL_VIDEODRIVER"] = "dummy"
 def main():

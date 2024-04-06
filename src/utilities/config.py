@@ -1,10 +1,10 @@
 
-from src.routing_algorithms.georouting import GeoRouting
-from src.routing_algorithms.q_learning_routing import QLearningRouting
-from src.routing_algorithms.random_routing import RandomRouting
-from src.routing_algorithms.q_fanet import Q_Fanet
-from src.routing_algorithms.Q_Fanet_OUR import Q_Fanet_OUR
-from src.routing_algorithms.QMR_routing import QMR
+from routing_algorithms.georouting import GeoRouting
+from routing_algorithms.q_learning_routing import QLearningRouting
+from routing_algorithms.random_routing import RandomRouting
+from routing_algorithms.q_fanet import Q_Fanet
+from routing_algorithms.Q_Fanet_OUR import Q_Fanet_OUR
+from routing_algorithms.QMR_routing import QMR
 from enum import Enum
 
 

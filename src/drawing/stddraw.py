@@ -6,7 +6,7 @@ drawing.  A drawing appears on the canvas.  The canvas appears
 in the window.  As a convenience, the module also imports the
 commonly used Color objects defined in the color module.
 """
-from src.utilities import config
+from utilities import config
 import time
 import os
 import sys

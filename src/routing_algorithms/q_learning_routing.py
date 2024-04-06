@@ -1,5 +1,5 @@
-from src.routing_algorithms.BASE_routing import BASE_routing
-from src.utilities import utilities as util
+from routing_algorithms.BASE_routing import BASE_routing
+from utilities import utilities as util
 
 
 class QLearningRouting(BASE_routing):

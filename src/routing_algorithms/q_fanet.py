@@ -1,10 +1,10 @@
-from src.routing_algorithms.BASE_routing import BASE_routing
-from src.utilities import utilities as util
+from routing_algorithms.BASE_routing import BASE_routing
+from utilities import utilities as util
 import numpy as np
 import sys
 import math
-from src.utilities import utilities
-import src.utilities.config as config
+from utilities import utilities
+import utilities.config as config
 
 
 class Q_Fanet(BASE_routing):

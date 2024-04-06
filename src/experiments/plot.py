@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import json
 import numpy as np
 import matplotlib
-from src.utilities import config
+from utilities import config
 
 
 from argparse import ArgumentParser

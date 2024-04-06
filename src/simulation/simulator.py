@@ -1,8 +1,8 @@
-from src.drawing import pp_draw
-from src.entities.uav_entities import *
-from src.simulation.metrics import Metrics
-from src.utilities import config, utilities
-from src.routing_algorithms.net_routing import MediumDispatcher
+from drawing import pp_draw
+from entities.uav_entities import *
+from simulation.metrics import Metrics
+from utilities import config, utilities
+from routing_algorithms.net_routing import MediumDispatcher
 from collections import defaultdict
 from tqdm import tqdm
 

@@ -1,6 +1,6 @@
-from src.entities.uav_entities import DataPacket, ACKPacket, HelloPacket, Packet
-from src.utilities import utilities as util
-from src.utilities import config
+from entities.uav_entities import DataPacket, ACKPacket, HelloPacket, Packet
+from utilities import utilities as util
+from utilities import config
 
 from scipy.stats import norm
 import abc

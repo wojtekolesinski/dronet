@@ -5,7 +5,7 @@ The picture module defines the Picture class.
 """
 
 #-----------------------------------------------------------------------
-from src.drawing import color
+from drawing import color
 
 import pygame
 import sys

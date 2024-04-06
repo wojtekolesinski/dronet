@@ -1,13 +1,13 @@
-import src.utilities.experiments_config as conf
-from src.experiments.parser.parser import command_line_parser
-from src.utilities import config
-from src.simulation.simulator import Simulator
+import utilities.experiments_config as conf
+from experiments.parser.parser import command_line_parser
+from utilities import config
+from simulation.simulator import Simulator
 import os
 
 
 def sim_setup(n_drones, seed, algorithm):
     """
-    Build an instance of Simulator using the parameters from src.utilities.experiments_config.py
+    Build an instance of Simulator using the parameters from utilities.experiments_config.py
     @param n_drones: the number of drones during the simulation
     @param seed: the simulation seed
     @param algorithm: the algorithm used to route the packets

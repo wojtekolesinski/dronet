@@ -1,6 +1,6 @@
-from src.routing_algorithms.BASE_routing import BASE_routing
-from src.utilities.utilities import euclidean_distance
-import src.utilities.config as config
+from routing_algorithms.BASE_routing import BASE_routing
+from utilities.utilities import euclidean_distance
+import utilities.config as config
 
 class GeoRouting(BASE_routing):
 

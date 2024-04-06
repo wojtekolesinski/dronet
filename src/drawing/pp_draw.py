@@ -1,6 +1,6 @@
-from src.drawing import stddraw
-from src.entities.uav_entities import Environment
-from src.utilities import config, utilities
+from drawing import stddraw
+from entities.uav_entities import Environment
+from utilities import config, utilities
 from collections import defaultdict
 
 #printer the environment 

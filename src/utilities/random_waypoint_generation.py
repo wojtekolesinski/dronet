@@ -3,7 +3,7 @@ import random
 import math
 import matplotlib.pyplot as plt
 import numpy as np
-from src.utilities import config
+from utilities import config
 
 
 ## -----------------------------------------------------------------------------
