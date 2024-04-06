@@ -200,44 +200,6 @@ class DataPacket(Packet):
         super().__init__(time_step_creation, simulator, event_ref)
 
 
-class ACKPacket(Packet):
-    def __init__(
-        self, src_drone, dst_drone, simulator, acked_packet, time_step_creation=None
-    ):
-        super().__init__(time_step_creation, simulator, None)
-        self.acked_packet = (
-            acked_packet  # packet that the drone who creates it wants to ACK
-        )
-
-        # source and destination of a packet
-        self.src_drone = src_drone
-        self.dst_drone = dst_drone
-
-
-class HelloPacket(Packet):
-    """The hello message is responsible to give info about neighborhood"""
-
-    def __init__(
-        self,
-        src_drone,
-        time_step_creation,
-        simulator,
-        cur_pos,
-        speed,
-        next_target,
-        energy,
-        queue_delay,
-        learning_rate,
-    ):
-        super().__init__(time_step_creation, simulator, None)
-        self.cur_pos = cur_pos
-        self.speed = speed
-        self.next_target = next_target
-        self.src_drone = src_drone  # Don't use this. (we take just the id)
-        self.energy = energy
-        self.queue_delay = queue_delay
-        self.learning_rate = learning_rate
-
 
 # ------------------ Depot ----------------------
 class Depot(Entity):
@@ -346,39 +308,38 @@ class Drone(Entity):
         tmp_buffer = []
         self.tightest_event_deadline = np.nan
 
-        for pck in self.__buffer:
-            if not pck.is_expired(cur_step):
-                tmp_buffer.append(pck)  # append again only if it is not expired
+        for packet in self.__buffer:
+            if not packet.is_expired(cur_step):
+                tmp_buffer.append(packet)  # append again only if it is not expired
                 self.tightest_event_deadline = np.nanmin(
-                    [self.tightest_event_deadline, pck.event_ref.deadline]
+                    [self.tightest_event_deadline, packet.event_ref.deadline]
                 )
+                continue
 
-            else:
+            to_remove_packets += 1
 
-                to_remove_packets += 1
+            if self.simulator.routing_algorithm.name not in "GEO" "RND" "GEOS":
+                outcome = -1
+                current_drone = self
 
-                if self.simulator.routing_algorithm.name not in "GEO" "RND" "GEOS":
-
-                    feedback = -1
-                    current_drone = self
-
-                    for drone in self.simulator.drones:
-                        drone.routing_algorithm.feedback(
-                            current_drone,  # feedback(self, drone, id_event, delay, outcome, reward, E_j, hop_delay):
-                            pck.event_ref.identifier,
-                            self.simulator.event_duration,
-                            feedback,
-                            -100,
-                            None,
-                            None,
-                        )  # added this -100 for the q-fanet algorithm
+                for drone in self.simulator.drones:
+                    drone.routing_algorithm.feedback(
+                        current_drone,  # feedback(self, drone, id_event, delay, outcome, reward, E_j, hop_delay):
+                        packet.event_ref.identifier,
+                        self.simulator.event_duration,
+                        outcome,
+                        -100,
+                        None,
+                        None,
+                    )  # added this -100 for the q-fanet algorithm
         self.__buffer = tmp_buffer
 
         if self.buffer_length() == 0:
             self.move_routing = False
 
     def packet_is_expiring(self, cur_step):
-        """return true if exist a packet that is expiring and must be returned to the depot as soon as possible
+        """return true if exist a packet that is expiring and must be returned 
+        to the depot as soon as possible
         -> start to move manually to the depot.
 
         This method is optional, there is flag src.utilities.config.ROUTING_IF_EXPIRING
@@ -596,6 +557,46 @@ class Drone(Entity):
 
     def __hash__(self):
         return hash(self.identifier)
+
+
+# ----------------- Drone dependent packets -------------------
+class ACKPacket(Packet):
+    def __init__(
+        self, src_drone: Drone, dst_drone: Drone, simulator: Simulator, acked_packet: DataPacket, time_step_creation=None
+    ):
+        super().__init__(time_step_creation, simulator, None)
+        self.acked_packet = (
+            acked_packet  # packet that the drone who creates it wants to ACK
+        )
+
+        # source and destination of a packet
+        self.src_drone = src_drone
+        self.dst_drone = dst_drone
+
+
+class HelloPacket(Packet):
+    """The hello message is responsible to give info about neighborhood"""
+
+    def __init__(
+        self,
+        src_drone: Drone,
+        time_step_creation,
+        simulator: Simulator,
+        cur_pos,
+        speed,
+        next_target,
+        energy,
+        queue_delay,
+        learning_rate,
+    ):
+        super().__init__(time_step_creation, simulator, None)
+        self.cur_pos = cur_pos
+        self.speed = speed
+        self.next_target = next_target
+        self.src_drone = src_drone  # Don't use this. (we take just the id)
+        self.energy = energy
+        self.queue_delay = queue_delay
+        self.learning_rate = learning_rate
 
 
 # ------------------ Environment ----------------------

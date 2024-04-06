@@ -253,6 +253,7 @@ class Simulator:
             self.cur_step = cur_step
             # check for new events and remove the expired ones from the environment
             # self.environment.update_events(cur_step)
+
             # sense the area and move drones and sense the area
             self.network_dispatcher.run_medium(cur_step)
 
