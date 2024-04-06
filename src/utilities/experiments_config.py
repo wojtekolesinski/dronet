@@ -1,5 +1,3 @@
-
-
 len_simulation = 18000
 time_step_duration = 0.15
 show_plot = False

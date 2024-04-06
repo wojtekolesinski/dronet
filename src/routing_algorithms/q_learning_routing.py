@@ -31,7 +31,9 @@ class QLearningRouting(BASE_routing):
             # TIPS: implement here the q-table updating process
 
             # Drone id and Taken actions
-            print(f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}")
+            print(
+                f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}"
+            )
 
             # feedback from the environment
             print(drone, id_event, delay, outcome)
@@ -63,7 +65,7 @@ class QLearningRouting(BASE_routing):
         # print(cell_index)
         state, action = None, None
 
-        #print(self.drone.identifier)
+        # print(self.drone.identifier)
 
         # Store your current action --- you can add some stuff if needed to take a reward later
         self.taken_actions[packet.event_ref.identifier] = (state, action)

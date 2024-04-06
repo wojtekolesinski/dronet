@@ -2,6 +2,7 @@ from routing_algorithms.BASE_routing import BASE_routing
 from utilities.utilities import euclidean_distance
 import utilities.config as config
 
+
 class GeoRouting(BASE_routing):
 
     def __init__(self, drone, simulator):
@@ -28,7 +29,11 @@ class GeoRouting(BASE_routing):
             neighbor_pos = hello.cur_pos
             neighbor_distance_to_depot = euclidean_distance(neighbor_pos, depot_pos)
             # my_distance_to_neighbor = util.euclidean_distance(cur_pos, neighbor_pos)
-            if neighbor_distance_to_depot < best_distance and (neighbor_distance_to_depot - best_distance) <= config.COMMUNICATION_RANGE_DRONE:
+            if (
+                neighbor_distance_to_depot < best_distance
+                and (neighbor_distance_to_depot - best_distance)
+                <= config.COMMUNICATION_RANGE_DRONE
+            ):
                 best_drone = neighbor
                 best_distance = neighbor_distance_to_depot
 

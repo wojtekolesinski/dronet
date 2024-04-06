@@ -10,13 +10,14 @@
 #test others algorithms
 for nd in "5" "10" "15" "20" "25" "30" ;
 do
-    for alg in  "QMR" "Q_FANET" "Q_FANET_OUR";#"GEO"
+    for alg in  "QMR" "Q_FANET" "Q_FANET_OUR" "GEO";
     do
         echo "run: ${alg} - ndrones ${nd} "
-        python -m src.experiments.experiment_ndrones -nd ${nd} -i_s 0 -e_s 10 -alg ${alg} &
-        python -m src.experiments.experiment_ndrones -nd ${nd} -i_s 10 -e_s 20 -alg ${alg} &
-        python -m src.experiments.experiment_ndrones -nd ${nd} -i_s 20 -e_s 30 -alg ${alg} &
+        python -m src.experiments.experiment_ndrones -nd ${nd} -i_s 0 -e_s 1 -alg ${alg}
+        # python -m src.experiments.experiment_ndrones -nd ${nd} -i_s 10 -e_s 20 -alg ${alg} &
+        # python -m src.experiments.experiment_ndrones -nd ${nd} -i_s 20 -e_s 30 -alg ${alg} &
     done;
+    exit 0
 done;
 wait
 

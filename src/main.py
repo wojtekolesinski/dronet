@@ -1,11 +1,19 @@
 from simulation.simulator import Simulator
 
+
 # os.environ["SDL_VIDEODRIVER"] = "dummy"
 def main():
-    """ the place where to run simulations and experiments. """
+    """the place where to run simulations and experiments."""
 
-    sim = Simulator()   # empty constructor means that all the parameters of the simulation are taken from src.utilities.config.py
-    sim.run()            # run the simulation
+    import os
+
+    print(os.getcwd())
+    os.chdir("..")
+    print(os.getcwd())
+    sim = (
+        Simulator()
+    )  # empty constructor means that all the parameters of the simulation are taken from utilities.config.py
+    sim.run()  # run the simulation
     sim.close()
 
 

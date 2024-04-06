@@ -19,32 +19,34 @@ you can initialize the Simulator with non default values.
 
 class Simulator:
 
-    def __init__(self,
-                 len_simulation=config.SIM_DURATION,
-                 time_step_duration=config.TS_DURATION,
-                 seed=config.SEED,
-                 n_drones=config.N_DRONES,
-                 env_width=config.ENV_WIDTH,
-                 env_height=config.ENV_HEIGHT,
-                 drone_com_range=config.COMMUNICATION_RANGE_DRONE,
-                 drone_sen_range=config.SENSING_RANGE_DRONE,
-                 drone_speed=config.DRONE_SPEED,
-                 drone_max_buffer_size=config.DRONE_MAX_BUFFER_SIZE,
-                 drone_max_energy=config.DRONE_MAX_ENERGY,
-                 drone_retransmission_delta=config.RETRANSMISSION_DELAY,
-                 drone_communication_success=config.COMMUNICATION_P_SUCCESS,
-                 depot_com_range=config.DEPOT_COMMUNICATION_RANGE,
-                 depot_coordinates=config.DEPOT_COO,
-                 event_duration=config.EVENTS_DURATION,
-                 event_generation_prob=config.P_FEEL_EVENT,
-                 event_generation_delay=config.D_FEEL_EVENT,
-                 packets_max_ttl=config.PACKETS_MAX_TTL,
-                 show_plot=config.PLOT_SIM,
-                 routing_algorithm=config.ROUTING_ALGORITHM,
-                 communication_error_type=config.CHANNEL_ERROR_TYPE,
-                 prob_size_cell_r=config.CELL_PROB_SIZE_R,
-                 simulation_name="",
-                 run_experiments = False):
+    def __init__(
+        self,
+        len_simulation=config.SIM_DURATION,
+        time_step_duration=config.TS_DURATION,
+        seed=config.SEED,
+        n_drones=config.N_DRONES,
+        env_width=config.ENV_WIDTH,
+        env_height=config.ENV_HEIGHT,
+        drone_com_range=config.COMMUNICATION_RANGE_DRONE,
+        drone_sen_range=config.SENSING_RANGE_DRONE,
+        drone_speed=config.DRONE_SPEED,
+        drone_max_buffer_size=config.DRONE_MAX_BUFFER_SIZE,
+        drone_max_energy=config.DRONE_MAX_ENERGY,
+        drone_retransmission_delta=config.RETRANSMISSION_DELAY,
+        drone_communication_success=config.COMMUNICATION_P_SUCCESS,
+        depot_com_range=config.DEPOT_COMMUNICATION_RANGE,
+        depot_coordinates=config.DEPOT_COO,
+        event_duration=config.EVENTS_DURATION,
+        event_generation_prob=config.P_FEEL_EVENT,
+        event_generation_delay=config.D_FEEL_EVENT,
+        packets_max_ttl=config.PACKETS_MAX_TTL,
+        show_plot=config.PLOT_SIM,
+        routing_algorithm=config.ROUTING_ALGORITHM,
+        communication_error_type=config.CHANNEL_ERROR_TYPE,
+        prob_size_cell_r=config.CELL_PROB_SIZE_R,
+        simulation_name="",
+        run_experiments=False,
+    ):
         self.cur_step = None
         self.drone_com_range = drone_com_range
         self.drone_sen_range = drone_sen_range
@@ -62,7 +64,9 @@ class Simulator:
         self.time_step_duration = time_step_duration
         self.seed = seed
         self.event_duration = event_duration
-        self.event_max_retrasmission = math.ceil(event_duration / drone_retransmission_delta)  # 600 esempio
+        self.event_max_retrasmission = math.ceil(
+            event_duration / drone_retransmission_delta
+        )  # 600 esempio
         self.event_generation_prob = event_generation_prob
         self.event_generation_delay = event_generation_delay
         self.packets_max_ttl = packets_max_ttl
@@ -89,25 +93,46 @@ class Simulator:
         # Setup the simulation
         self.__set_simulation()
         self.__set_metrics()
-        
-        self.save_data_dir = config.EXPERIMENTS_DIR if self.run_experiments else config.ROOT_EVALUATION_DATA
 
-        self.simulation_name = "simulation-" + utilities.date() + "_" + str(simulation_name) + "_" + str(self.seed) + "_" + str(self.n_drones) + "_" + str(self.routing_algorithm.name)
-        
+        self.save_data_dir = (
+            config.EXPERIMENTS_DIR
+            if self.run_experiments
+            else config.ROOT_EVALUATION_DATA
+        )
+
+        self.simulation_name = (
+            "simulation-"
+            + utilities.date()
+            + "_"
+            + str(simulation_name)
+            + "_"
+            + str(self.seed)
+            + "_"
+            + str(self.n_drones)
+            + "_"
+            + str(self.routing_algorithm.name)
+        )
+
         if run_experiments == True:
-            self.simulation_name = "experiment__seed_" + str(self.seed) + "_ndrones_" + str(self.n_drones) + "_alg_" + str(self.routing_algorithm.name)
+            self.simulation_name = (
+                "experiment__seed_"
+                + str(self.seed)
+                + "_ndrones_"
+                + str(self.n_drones)
+                + "_alg_"
+                + str(self.routing_algorithm.name)
+            )
 
         self.simulation_test_dir = self.simulation_name + "/"
 
         self.start = time.time()
         self.event_generator = utilities.EventGenerator(self)
 
-
     def __setup_net_dispatcher(self):
         self.network_dispatcher = MediumDispatcher(self.metrics)
 
     def __set_metrics(self):
-        """ the method sets up all the parameters in the metrics class """
+        """the method sets up all the parameters in the metrics class"""
         self.metrics.info_mission()
 
     def __set_random_generators(self):
@@ -118,11 +143,13 @@ class Simulator:
             self.rnd_event = np.random.RandomState(self.seed)
 
     def __set_simulation(self):
-        """ the method creates all the uav entities """
+        """the method creates all the uav entities"""
 
         self.__set_random_generators()
 
-        self.path_manager = utilities.PathManager(config.PATH_FROM_JSON, config.JSONS_PATH_PREFIX, self.seed)
+        self.path_manager = utilities.PathManager(
+            config.PATH_FROM_JSON, config.JSONS_PATH_PREFIX, self.seed
+        )
         self.environment = Environment(self.env_width, self.env_height, self)
 
         self.depot = Depot(self.depot_coordinates, self.depot_com_range, self)
@@ -131,27 +158,33 @@ class Simulator:
 
         # drone 0 is the first
         for i in range(self.n_drones):
-            self.drones.append(Drone(i, self.path_manager.path(i, self), self.depot, self))
+            self.drones.append(
+                Drone(i, self.path_manager.path(i, self), self.depot, self)
+            )
 
         self.environment.add_drones(self.drones)
         self.environment.add_depot(self.depot)
 
         # Set the maximum distance between the drones and the depot
-        self.max_dist_drone_depot = utilities.euclidean_distance(self.depot.coords, (self.env_width, self.env_height))
+        self.max_dist_drone_depot = utilities.euclidean_distance(
+            self.depot.coords, (self.env_width, self.env_height)
+        )
 
         if self.show_plot or config.SAVE_PLOT:
-            self.draw_manager = pp_draw.PathPlanningDrawer(self.environment, self, borders=True)
+            self.draw_manager = pp_draw.PathPlanningDrawer(
+                self.environment, self, borders=True
+            )
 
     def __sim_name(self):
         """
-            return the identification name for
-            the current simulation. It is useful to print
-            the simulation progress
+        return the identification name for
+        the current simulation. It is useful to print
+        the simulation progress
         """
         return "sim_seed" + str(self.seed) + "drones" + str(self.n_drones)
 
     def __plot(self, cur_step):
-        """ plot the simulation """
+        """plot the simulation"""
         if cur_step % config.SKIP_SIM_STEP != 0:
             return
 
@@ -171,27 +204,33 @@ class Simulator:
             self.draw_manager.draw_event(event)
 
         # Draw simulation info
-        self.draw_manager.draw_simulation_info(cur_step=cur_step, max_steps=self.len_simulation)
+        self.draw_manager.draw_simulation_info(
+            cur_step=cur_step, max_steps=self.len_simulation
+        )
 
         # rendering
-        self.draw_manager.update(show=self.show_plot, save=config.SAVE_PLOT,
-                                 filename=self.sim_save_file + ".png")
-        
-
+        self.draw_manager.update(
+            show=self.show_plot,
+            save=config.SAVE_PLOT,
+            filename=self.sim_save_file + ".png",
+        )
 
     def increase_meetings_probs(self, drones, cur_step):
-        """ Increases the probabilities of meeting someone. """
+        """Increases the probabilities of meeting someone."""
         cells = set()
         for drone in drones:
             coords = drone.coords
-            cell_index = utilities.TraversedCells.coord_to_cell(size_cell=self.prob_size_cell,
-                                                                width_area=self.env_width,
-                                                                x_pos=coords[0],  # e.g. 1500
-                                                                y_pos=coords[1])  # e.g. 500
+            cell_index = utilities.TraversedCells.coord_to_cell(
+                size_cell=self.prob_size_cell,
+                width_area=self.env_width,
+                x_pos=coords[0],  # e.g. 1500
+                y_pos=coords[1],
+            )  # e.g. 500
             cells.add(int(cell_index[0]))
 
-        for cell, cell_center in utilities.TraversedCells.all_centers(self.env_width, self.env_height,
-                                                                      self.prob_size_cell):
+        for cell, cell_center in utilities.TraversedCells.all_centers(
+            self.env_width, self.env_height, self.prob_size_cell
+        ):
 
             index_cell = int(cell[0])
             old_vals = self.cell_prob_map[index_cell]
@@ -210,7 +249,7 @@ class Simulator:
         """
 
         for cur_step in tqdm(range(self.len_simulation)):
-            
+
             self.cur_step = cur_step
             # check for new events and remove the expired ones from the environment
             # self.environment.update_events(cur_step)
@@ -238,32 +277,36 @@ class Simulator:
                 self.__plot(cur_step)
 
         if config.DEBUG:
-            print("End of simulation, sim time: " + str(
-                (cur_step + 1) * self.time_step_duration) + " sec, #iteration: " + str(cur_step + 1))
+            print(
+                "End of simulation, sim time: "
+                + str((cur_step + 1) * self.time_step_duration)
+                + " sec, #iteration: "
+                + str(cur_step + 1)
+            )
 
     def close(self):
-        """ do some stuff at the end of simulation"""
+        """do some stuff at the end of simulation"""
         print("Closing simulation")
 
         self.print_metrics(plot_id="final")
         self.save_metrics(self.save_data_dir + self.simulation_name)
 
     def print_metrics(self, plot_id="final"):
-        """ add signature """
+        """add signature"""
         self.metrics.print_overall_stats()
 
     def save_metrics(self, filename_path, save_pickle=False):
-        """ add signature """
+        """add signature"""
         self.metrics.save_as_json(filename_path + ".json")
         if save_pickle:
             self.metrics.save(filename_path + ".pickle")
-    
+
     def score(self):
-        """ returns a score for the exectued simulation: 
+        """returns a score for the exectued simulation:
 
-                sum( event delays )  / number of events
+            sum( event delays )  / number of events
 
-            Notice that, expired or not found events will be counted with a max_delay
+        Notice that, expired or not found events will be counted with a max_delay
         """
         score = round(self.metrics.score(), 2)
         print("Score sim " + self.simulation_name + ":", score)

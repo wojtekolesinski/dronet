@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import pickle
 import pandas as pd
@@ -27,7 +25,7 @@ class Metrics:
         # all packets in the simulation
         self.all_control_packets_in_simulation = 0
         self.all_data_packets_in_simulation = 0
-        
+
         # all the events generated during the simulation
         self.events = set()
 
@@ -49,33 +47,39 @@ class Metrics:
         self.time_on_active_routing = 0
 
     def score(self, undelivered_penalty=1.5):
-        """ returns a score for the exectued simulation: 
+        """returns a score for the exectued simulation:
 
-                sum( event delays )  / number of events
+            sum( event delays )  / number of events
 
-            Notice that, expired or not found events will be counted with a max_delay*penalty
+        Notice that, expired or not found events will be counted with a max_delay*penalty
         """
         # mean delivery time
-        # get best delivery time for each event  
-        all_delivered_events = set([pck.event_ref for pck, _ in self.drones_packets_to_depot])
+        # get best delivery time for each event
+        all_delivered_events = set(
+            [pck.event_ref for pck, _ in self.drones_packets_to_depot]
+        )
         event_delivery_times_dict = {ev.identifier: [] for ev in all_delivered_events}
 
         # DELIVERY TIME -> METRIC FOR PLOT
         for pck, delivery_ts in self.drones_packets_to_depot:
             # time between event generation and packet delivery to depot -> dict to help computation
-            event_delivery_times_dict[pck.event_ref.identifier].append(delivery_ts - pck.event_ref.current_time)
+            event_delivery_times_dict[pck.event_ref.identifier].append(
+                delivery_ts - pck.event_ref.current_time
+            )
 
         # maps every event to the minimum delay of the packet arrival to the depot
         event_delivery_times = []
         for ev_id in event_delivery_times_dict.keys():
             event_delivery_times.append(np.nanmin(event_delivery_times_dict[ev_id]))
 
-        not_delivered_events = len(self.events) - len(all_delivered_events) 
+        not_delivered_events = len(self.events) - len(all_delivered_events)
         assert not_delivered_events >= 0
-         
-        event_delivery_times.extend([undelivered_penalty * self.simulator.event_duration] * not_delivered_events)  # add penalities to not delivered or not found packets
 
-        return np.nanmean(event_delivery_times)       
+        event_delivery_times.extend(
+            [undelivered_penalty * self.simulator.event_duration] * not_delivered_events
+        )  # add penalities to not delivered or not found packets
+
+        return np.nanmean(event_delivery_times)
 
     def other_metrics(self):
         """
@@ -92,15 +96,19 @@ class Metrics:
         self.number_of_detected_events = len(all_detected_events)
 
         # the number of all events that the drones notify (before the event deadline) to the depot
-        all_delivered_events = set([pck.event_ref for pck, _ in self.drones_packets_to_depot])
+        all_delivered_events = set(
+            [pck.event_ref for pck, _ in self.drones_packets_to_depot]
+        )
 
         self.number_of_events_to_depot = len(all_delivered_events)
-        self.number_of_packets_to_depot = len(self.drones_packets_to_depot)  # may contain duplicates
-        
-        # NOTE: THE DEPOT PACKETS ARE NOT COUNTED, WE ADD THEM HERE!! 
+        self.number_of_packets_to_depot = len(
+            self.drones_packets_to_depot
+        )  # may contain duplicates
+
+        # NOTE: THE DEPOT PACKETS ARE NOT COUNTED, WE ADD THEM HERE!!
         # self.all_data_packets_in_simulation += len(self.drones_packets_to_depot)
 
-        # mean delivery time 
+        # mean delivery time
         packet_delivery_times = []
 
         # maps an event to the time steps in which it was delivered
@@ -112,7 +120,9 @@ class Metrics:
             packet_delivery_times.append(delivery_ts - pck.time_step_creation)
 
             # time between event generation and packet delivery to depot -> dict to help computation
-            event_delivery_times_dict[pck.event_ref.identifier].append(delivery_ts - pck.event_ref.current_time)
+            event_delivery_times_dict[pck.event_ref.identifier].append(
+                delivery_ts - pck.event_ref.current_time
+            )
 
         # maps every event to the minimum delay of the packet arrival at the depot
         event_delivery_times = []
@@ -121,8 +131,12 @@ class Metrics:
 
         # averaged delays over all packets/events
         self.event_delivery_times = event_delivery_times
-        self.packet_mean_delivery_time = np.mean(packet_delivery_times) * self.simulator.time_step_duration
-        self.event_mean_delivery_time = np.mean(event_delivery_times) * self.simulator.time_step_duration
+        self.packet_mean_delivery_time = (
+            np.mean(packet_delivery_times) * self.simulator.time_step_duration
+        )
+        self.event_mean_delivery_time = (
+            np.mean(event_delivery_times) * self.simulator.time_step_duration
+        )
 
     def print_overall_stats(self):
         """
@@ -142,11 +156,16 @@ class Metrics:
         # print("Control packets exchanged during simulation: ", self.all_control_packets_in_simulation)
         # print("Data packets generated during simulation: ", self.all_data_packets_in_simulation)
         # print("Number of packets to depot: ", self.number_of_packets_to_depot)
-        print("Seed: ",self.simulator.seed)
-        print("Drones: ",self.simulator.n_drones)
-        print("Mean number of relays: ", np.nanmean(self.mean_numbers_of_possible_relays))
+        print("Seed: ", self.simulator.seed)
+        print("Drones: ", self.simulator.n_drones)
+        print(
+            "Mean number of relays: ", np.nanmean(self.mean_numbers_of_possible_relays)
+        )
         print("Packet mean delivery time (seconds): ", self.packet_mean_delivery_time)
-        print("Packet delivery ratio: ", self.number_of_packets_to_depot/self.all_data_packets_in_simulation)
+        print(
+            "Packet delivery ratio: ",
+            self.number_of_packets_to_depot / self.all_data_packets_in_simulation,
+        )
 
     def info_mission(self):
         """
@@ -175,50 +194,70 @@ class Metrics:
             "show_plot": self.simulator.show_plot,
             "routing_algorithm": str(self.simulator.routing_algorithm),
             "communication_error_type": str(self.simulator.communication_error_type),
-            "time_on_active_routing" : str(self.time_on_active_routing)
+            "time_on_active_routing": str(self.time_on_active_routing),
         }
 
     def __dictionary_represenation(self):
-        """ compute the dictionary to save as json """
+        """compute the dictionary to save as json"""
         self.other_metrics()
 
         out_results = {"mission_setup": self.mission_setup}
         out_results["number_of_generated_events"] = self.number_of_generated_events
         out_results["number_of_detected_events"] = self.number_of_detected_events
-        out_results["number_of_not_generated_events"] = self.number_of_not_generated_events
-        out_results["throughput"] = self.number_of_packets_to_depot / (self.mission_setup["len_simulation"] * self.mission_setup["time_step_duration"])        
+        out_results["number_of_not_generated_events"] = (
+            self.number_of_not_generated_events
+        )
+        out_results["throughput"] = self.number_of_packets_to_depot / (
+            self.mission_setup["len_simulation"]
+            * self.mission_setup["time_step_duration"]
+        )
         out_results["number_of_events_to_depot"] = self.number_of_events_to_depot
         out_results["number_of_packets_to_depot"] = self.number_of_packets_to_depot
         out_results["packet_mean_delivery_time"] = self.packet_mean_delivery_time
         out_results["event_mean_delivery_time"] = self.event_mean_delivery_time
         out_results["time_on_mission"] = self.time_on_mission
-        out_results["packet_delivery_ratio"] = self.number_of_packets_to_depot/self.all_data_packets_in_simulation
-        out_results["all_control_packets_in_simulation"] = self.all_control_packets_in_simulation
-        out_results["all_data_packets_in_simulation"] = self.all_data_packets_in_simulation
+        out_results["packet_delivery_ratio"] = (
+            self.number_of_packets_to_depot / self.all_data_packets_in_simulation
+        )
+        out_results["all_control_packets_in_simulation"] = (
+            self.all_control_packets_in_simulation
+        )
+        out_results["all_data_packets_in_simulation"] = (
+            self.all_data_packets_in_simulation
+        )
         out_results["all_events"] = [ev.to_json() for ev in self.events]
-        out_results["not_listened_events"] = [ev.to_json() for ev in self.events_not_listened]
-        out_results["events_delivery_times"] = [str(e) for e in self.event_delivery_times]
+        out_results["not_listened_events"] = [
+            ev.to_json() for ev in self.events_not_listened
+        ]
+        out_results["events_delivery_times"] = [
+            str(e) for e in self.event_delivery_times
+        ]
         out_results["drones_packets"] = [pck.to_json() for pck in self.drones_packets]
-        out_results["drones_to_depot_packets"] = [(pck.to_json(), delivery_ts) for pck, delivery_ts in self.drones_packets_to_depot]
+        out_results["drones_to_depot_packets"] = [
+            (pck.to_json(), delivery_ts)
+            for pck, delivery_ts in self.drones_packets_to_depot
+        ]
         out_results["score"] = self.score()
-        out_results["mean_number_of_relays"] = np.nanmean(self.mean_numbers_of_possible_relays)
+        out_results["mean_number_of_relays"] = np.nanmean(
+            self.mean_numbers_of_possible_relays
+        )
 
         return out_results
 
     def save(self, filename):
-        """ save the metrics on file """
-        with open(filename, 'wb') as out:
+        """save the metrics on file"""
+        with open(filename, "wb") as out:
             pickle.dump(self, out)
 
     @staticmethod
     def from_file(filename):
-        """ load the metrics from a file """
-        with open(filename, 'rb') as handle:
+        """load the metrics from a file"""
+        with open(filename, "rb") as handle:
             obj = pickle.load(handle)
         return obj
 
     def save_as_json(self, filename):
-        """ save all the metrics into a json file """
+        """save all the metrics into a json file"""
         out = self.__dictionary_represenation()
         js = json.dumps(out)
         f = open(filename, "w")
