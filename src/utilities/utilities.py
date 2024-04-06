@@ -109,6 +109,8 @@ class EventGenerator:
 
 
 # ------------------ Path manager ----------------------
+Path = list[tuple[int, int]]
+
 class PathManager:
 
     def __init__(self, path_from_json: bool, json_file: str, seed: int):
@@ -126,7 +128,7 @@ class PathManager:
             self.path_dict = None
             self.rnd_paths = np.random.RandomState(seed)
 
-    def path(self, drone_id, simulator):
+    def path(self, drone_id, simulator) -> Path:
         """takes the drone id and
         returns a path (list of tuple)
         for it.

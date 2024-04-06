@@ -154,7 +154,7 @@ class Simulator:
 
         self.depot = Depot(self.depot_coordinates, self.depot_com_range, self)
 
-        self.drones = []
+        self.drones: list[Drone] = []
 
         # drone 0 is the first
         for i in range(self.n_drones):

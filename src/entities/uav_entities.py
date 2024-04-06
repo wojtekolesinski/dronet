@@ -1,6 +1,7 @@
 import numpy as np
 
 from utilities import config, utilities
+from simulation.simulator import Simulator
 
 
 class SimulatedEntity:
@@ -8,7 +9,7 @@ class SimulatedEntity:
     of the simulation. No class of this type is directly instantiable.
     """
 
-    def __init__(self, simulator):
+    def __init__(self, simulator: Simulator):
         self.simulator = simulator
 
 
@@ -16,7 +17,7 @@ class SimulatedEntity:
 class Entity(SimulatedEntity):
     """An entity in the environment, e.g. Drone, Event, Packet. It extends SimulatedEntity."""
 
-    def __init__(self, identifier: int, coords: tuple, simulator):
+    def __init__(self, identifier: int, coords: tuple, simulator: Simulator):
         super().__init__(simulator)
         self.identifier = identifier  # the id of the entity
         self.coords = coords  # the coordinates of the entity on the map
@@ -37,7 +38,7 @@ class Entity(SimulatedEntity):
 class Event(Entity):
     """An event is any kind of event that the drone detects on the aoi. It is an Entity."""
 
-    def __init__(self, coords: tuple, current_time: int, simulator, deadline=None):
+    def __init__(self, coords: tuple, current_time: int, simulator: Simulator, deadline: int | None=None):
         super().__init__(id(self), coords, simulator)
         self.current_time = current_time
 
@@ -87,7 +88,7 @@ class Event(Entity):
 class Packet(Entity):
     """A packet is an object created out of an event monitored on the aoi."""
 
-    def __init__(self, time_step_creation, simulator, event_ref: Event = None):
+    def __init__(self, time_step_creation, simulator: Simulator, event_ref: Event | None= None):
         """the event associated to the packet, time step in which the packet was created
         as for now, every packet is an event."""
 
@@ -195,7 +196,7 @@ class Packet(Entity):
 class DataPacket(Packet):
     """Basically a Packet"""
 
-    def __init__(self, time_step_creation, simulator, event_ref: Event = None):
+    def __init__(self, time_step_creation, simulator: Simulator, event_ref: Event = None):
         super().__init__(time_step_creation, simulator, event_ref)
 
 
@@ -518,7 +519,7 @@ class Drone(Entity):
                         + str(packet.identifier)
                     )
 
-    def next_target(self):
+    def next_target(self) -> tuple[int, int]:
         if self.move_routing:
             return self.depot.coords
         elif self.come_back_to_mission:

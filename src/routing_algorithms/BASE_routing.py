@@ -1,4 +1,5 @@
-from entities.uav_entities import DataPacket, ACKPacket, HelloPacket, Packet
+from entities.uav_entities import DataPacket, ACKPacket, HelloPacket, Packet, Drone
+from simulation.simulator import Simulator
 from utilities import utilities as util
 from utilities import config
 
@@ -8,7 +9,7 @@ import abc
 
 class BASE_routing(metaclass=abc.ABCMeta):
 
-    def __init__(self, drone, simulator):
+    def __init__(self, drone: Drone, simulator: Simulator):
         """The drone that is doing routing and simulator object."""
 
         self.drone = drone
