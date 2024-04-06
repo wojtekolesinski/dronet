@@ -1,7 +1,7 @@
 data/plots/*
 data/plots/evaluation_tests/*
 */__pycache__
-*/*/__pycache__
+**/__pycache__
 .idea
 .DS_Store
 .venv*
