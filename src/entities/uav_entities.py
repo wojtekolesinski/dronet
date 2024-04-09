@@ -428,9 +428,8 @@ class Drone(Entity):
             self.simulator.metrics.time_on_active_routing += 1
 
         if self.move_routing:
-            if (
-                not self.last_move_routing
-            ):  # this is the first time that we are doing move-routing
+            # this is the first time that we are doing move-routing
+            if not self.last_move_routing:  
                 self.last_mission_coords = self.coords
 
             self.__move_to_depot(time)

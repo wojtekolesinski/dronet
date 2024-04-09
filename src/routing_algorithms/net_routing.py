@@ -50,10 +50,10 @@ class MediumDispatcher:
             if dst_drone.routing_algorithm.channel_success(
                 drones_distance, no_error=True
             ):
-
+                # reception of a packet
                 dst_drone.routing_algorithm.drone_reception(
                     src_drone, packet, current_ts
-                )  # reception of a packet
+                )
 
         original_self_packets = [
             original_self_packets[i]

@@ -12,6 +12,8 @@ from numpy import random
 import pickle
 from ast import literal_eval as make_tuple
 from utilities import random_waypoint_generation
+from simulation.simulator import Simulator
+from entities.uav_entities import Drone
 
 
 random.seed(42)
@@ -82,7 +84,7 @@ def projection_on_line_between_points(p1, p2, p3):
 # ------------------ Event (Traffic) Generator ----------------------
 class EventGenerator:
 
-    def __init__(self, simulator):
+    def __init__(self, simulator: Simulator):
         """
         :param simulator: the main simulator object
         """
@@ -91,7 +93,7 @@ class EventGenerator:
         # for now no random on number of event generated
         # self.rnd_event = np.random.RandomState(self.simulator.seed)
 
-    def handle_events_generation(self, cur_step: int, drones: list):
+    def handle_events_generation(self, cur_step: int, drones: list[Drone]):
         """
         at fixed time randomly select a drone from the list and sample on it a packet/event.
 
