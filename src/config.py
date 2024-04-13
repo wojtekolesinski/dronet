@@ -54,7 +54,7 @@ EXPERIMENTS_DIR = (
 )
 
 # drawaing
-PLOT_SIM = True  # bool: whether to plot or not the simulation.
+show_plot = True  # bool: whether to plot or not the simulation.
 WAIT_SIM_STEP = (
     0  # .1     # float: seconds, pauses the rendering for 'DELAY_PLOT' seconds.
 )
@@ -73,31 +73,31 @@ SAVE_PLOT_DIR = "data/plots/"
 # add constants here...
 
 # ----------------------------- SIMULATION PARAMS. ---------------------------- #
-SIM_DURATION = 18000  # int: steps of simulation. # ***
-TS_DURATION = 0.150  # float: seconds duration of a step in seconds.
-SEED = 10  # int: seed of this simulation.
+len_simulation = 18000  # int: steps of simulation. # ***
+time_step_duration = 0.150  # float: seconds duration of a step in seconds.
+seed = 10  # int: seed of this simulation.
 
-N_DRONES = 5  # int: number of drones. # ***
-ENV_WIDTH = 1500  # float: meters, width of environment.
-ENV_HEIGHT = 1500  # float: meters, height of environment.
+n_drones = 5  # int: number of drones. # ***
+env_width = 1500  # float: meters, width of environment.
+env_height = 1500  # float:_durationeight of environment.
 
 # events
-EVENTS_DURATION = 1500  # SIM_DURATION  # int: steps, number of time steps that an event lasts  -> to seconds = step * step_duration.
-D_FEEL_EVENT = 65  # int: steps, a new packet is felt (generated on the drone) every 'D_FEEL_EVENT' steps. # ***
-P_FEEL_EVENT = 0.8  # float: probability that the drones feels the event generated on the drone. # ***
+event_duration = 1500  # SIM_DURATION  # int: steps, number of time steps that an event lasts  -> to seconds = step * step_duration.
+event_generation_delay = 65  # int: steps, a new packet is felt (generated on the drone) every 'D_FEEL_EVENT' steps. # ***
+event_generation_prob = 0.8  # float: probability that the drones feels the event generated on the drone. # ***
 
 """ e.g. given D_FEEL_EVENT = 500, P_FEEL_EVENT = .5, every 500 steps with probability .5 the drone will feel an event."""
 
 # drones
-COMMUNICATION_RANGE_DRONE = 150  # float: meters, communication range of the drones.
-SENSING_RANGE_DRONE = 0  # float: meters, the sensing range of the drones.
-DRONE_SPEED = 8  # float: m/s, drone speed.
-DRONE_MAX_BUFFER_SIZE = 10000  # int: max number of packets in the buffer of a drone.
-DRONE_MAX_ENERGY = 1000000  # int: max energy of a drone.
+drone_communication_range = 150  # float: meters, communication range of the drones.
+drone_sensing_range = 0  # float: meters, the sensing range of the drones.
+drone_speed = 8  # float: m/s, drone speed.
+drone_max_buffer_size = 10000  # int: max number of packets in the buffer of a drone.
+drone_max_energy = 1000000  # int: max energy of a drone.
 
 # depot
-DEPOT_COMMUNICATION_RANGE = 150  # float: meters, communication range of the depot.
-DEPOT_COO = (750, 0)  # (float, float): coordinates of the depot.
+depot_communication_range = 150  # float: meters, communication range of the depot.
+depot_coordinates = (750, 0)  # (float, float): coordinates of the depot.
 
 
 # ------------------------------- ROUTING PARAMS. ------------------------------- #
@@ -121,12 +121,12 @@ class ChannelError(Enum):
         return list(map(lambda c: c.name, ChannelError))
 
 
-ROUTING_ALGORITHM = RoutingAlgorithm.GEO
+routing_algorithm = RoutingAlgorithm.GEO
 CHANNEL_ERROR_TYPE = ChannelError.GAUSSIAN
 
 COMMUNICATION_P_SUCCESS = 1  # float: probability to have success in a communication.
 GUASSIAN_SCALE = 0.9  # float [0,1]: scale the error probability of the guassian -> success * GUASSIAN_SCALER
-PACKETS_MAX_TTL = (
+packets_max_ttl = (
     200  # float: threshold in the maximum number of hops. Causes loss of packets.
 )
 RETRANSMISSION_DELAY = 10  # int: how many time steps to wait before transmit again (for k retransmissions). # ---  #delta_k
