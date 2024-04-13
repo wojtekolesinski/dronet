@@ -102,10 +102,10 @@ class Metrics:
         # averaged delays over all packets/events
         self.event_delivery_times = event_delivery_times
         self.packet_mean_delivery_time = (
-            np.mean(packet_delivery_times) * config.TS_DURATION
+            np.mean(packet_delivery_times) * config.time_step_duration
         )
         self.event_mean_delivery_time = (
-            np.mean(event_delivery_times) * config.TS_DURATION
+            np.mean(event_delivery_times) * config.time_step_duration
         )
 
     def print_overall_stats(self):
