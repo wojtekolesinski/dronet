@@ -1,11 +1,11 @@
-import matplotlib.pyplot as plt
 import json
-import numpy as np
-import matplotlib
-from utilities import config
-
-
 from argparse import ArgumentParser
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
+import config
 
 LABEL_SIZE = 16
 

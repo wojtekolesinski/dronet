@@ -1,8 +1,9 @@
-from utilities.experiments_config import *
-from experiments.parser.parser import command_line_parser
-from utilities import config
-from simulation.simulator import Simulator
 import os
+
+import config
+from experiments.parser.parser import command_line_parser
+from simulation.simulator import Simulator
+from utilities.experiments_config import *
 
 
 def sim_setup(n_drones, seed, algorithm):

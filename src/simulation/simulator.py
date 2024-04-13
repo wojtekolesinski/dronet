@@ -1,14 +1,16 @@
-from drawing import pp_draw
-from entities.uav_entities import *
-from simulation.metrics import Metrics
-from utilities import config, utilities
-from routing_algorithms.net_routing import MediumDispatcher
-from collections import defaultdict
-from tqdm import tqdm
-
-import numpy as np
 import math
 import time
+from collections import defaultdict
+
+import numpy as np
+from tqdm import tqdm
+
+import config
+from drawing import pp_draw
+from entities.uav_entities import *
+from routing_algorithms.net_routing import MediumDispatcher
+from simulation.metrics import Metrics
+from utilities import utilities
 
 """
 This file contains the Simulation class. It allows to explicit all the relevant parameters of the simulation,
@@ -103,7 +105,9 @@ class Simulator:
         self.simulation_test_dir = self.simulation_name + "/"
 
         self.start = time.time()
-        self.event_generator = utilities.EventGenerator(self)
+        self.event_generator = utilities.EventGenerator(
+            self.seed, self.event_generation_delay
+        )
 
     def __setup_net_dispatcher(self):
         self.network_dispatcher = MediumDispatcher(self.metrics)
@@ -219,6 +223,14 @@ class Simulator:
             old_vals[2] = old_vals[0] / max(1, old_vals[1])
             self.cell_prob_map[index_cell] = old_vals
 
+    def handle_events_generation(self, cur_step: int):
+        index = self.event_generator.handle_events_generation(
+            cur_step, len(self.drones)
+        )
+        if index:
+            drone = self.drones[index]
+            drone.feel_event(cur_step)
+
     def run(self):
         """
         Simulator main function
@@ -235,7 +247,7 @@ class Simulator:
 
             # generates events
             # sense the events
-            self.event_generator.handle_events_generation(cur_step, self.drones)
+            self.handle_events_generation(cur_step)
 
             for drone in self.drones:
                 # 1. update expired packets on drone buffers

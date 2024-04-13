@@ -1,14 +1,15 @@
-import numpy as np
+import json
 import pickle
+from collections import defaultdict
+
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sb
-import json
-import matplotlib.pyplot as plt
 
+import config
 from entities.uav_entities import DataPacket
-from collections import defaultdict
 from utilities import utilities as util
-from utilities import config
 
 """ Metrics class keeps track of all the metrics during all the simulation. """
 

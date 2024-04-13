@@ -1,9 +1,10 @@
-from entities.uav_entities import DataPacket, ACKPacket, HelloPacket, Packet
-from utilities import utilities as util
-from utilities import config
+import abc
 
 from scipy.stats import norm
-import abc
+
+import config
+from entities.uav_entities import ACKPacket, DataPacket, HelloPacket, Packet
+from utilities import utilities as util
 
 
 class BASE_routing(metaclass=abc.ABCMeta):

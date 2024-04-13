@@ -3,17 +3,16 @@
     and plot the results 
 """
 
-import matplotlib.pyplot as plt
-import json
-import numpy as np
-import matplotlib.patches as mpatches
 import collections
-import matplotlib
-from utilities import config
-
-
+import json
 from argparse import ArgumentParser
 
+import matplotlib
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+
+import config
 
 # matplotlib size of text
 LABEL_SIZE = 16

@@ -1,8 +1,9 @@
 from collections import defaultdict
 
+import config
 from drawing import stddraw
 from entities.uav_entities import Environment
-from utilities import config, utilities
+from utilities import utilities
 
 
 # printer the environment

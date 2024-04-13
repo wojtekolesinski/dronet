@@ -1,6 +1,7 @@
 import numpy as np
 
-from utilities import config, utilities
+import config
+from utilities import utilities
 
 
 class SimulatedEntity:

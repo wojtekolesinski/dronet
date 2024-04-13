@@ -1,15 +1,14 @@
-""" To clean. """
-
-from utilities import config
-
-import pathlib
-import time
 import json
-import matplotlib.pyplot as plt
-import pandas as pd
-import numpy as np
+import pathlib
 import pickle
+import time
 from ast import literal_eval as make_tuple
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+import config
 from utilities import random_waypoint_generation
 
 
@@ -74,16 +73,14 @@ def projection_on_line_between_points(p1, p2, p3):
 # ------------------ Event (Traffic) Generator ----------------------
 class EventGenerator:
 
-    def __init__(self, simulator):
+    def __init__(self, seed: int, delay: int):
         """
         :param simulator: the main simulator object
         """
-        self.simulator = simulator
-        self.rnd_drones = np.random.RandomState(self.simulator.seed)
-        # for now no random on number of event generated
-        # self.rnd_event = np.random.RandomState(self.simulator.seed)
+        self.rnd_drones = np.random.RandomState(seed)
+        self.delay = delay
 
-    def handle_events_generation(self, cur_step: int, drones: list):
+    def handle_events_generation(self, cur_step: int, drone_count: int) -> int | None:
         """
         at fixed time randomly select a drone from the list and sample on it a packet/event.
 
@@ -91,16 +88,16 @@ class EventGenerator:
         :param drones: the drones where to sample the event
         :return: nothing
         """
-        if (
-            cur_step % self.simulator.event_generation_delay == 0
-        ):  # if it's time to generate a new packet
-            # drone that will receive the packet:
-            drone_index = self.rnd_drones.randint(0, len(drones))
-            drone = drones[drone_index]
-            drone.feel_event(cur_step)
+        if cur_step % self.delay != 0:  # if it's time to generate a new packet
+            return None
+        return self.rnd_drones.randint(0, drone_count)
 
 
 # ------------------ Path manager ----------------------
+Point = tuple[int, int]
+Path = list[Point]
+
+
 class PathManager:
 
     def __init__(self, path_from_json: bool, json_file: str, seed: int):
@@ -118,7 +115,7 @@ class PathManager:
             self.path_dict = None
             self.rnd_paths = np.random.RandomState(seed)
 
-    def path(self, drone_id, simulator):
+    def path(self, drone_id, simulator) -> Path:
         """takes the drone id and
         returns a path (list of tuple)
         for it.
@@ -143,7 +140,7 @@ class PathManager:
                 random_starting_point=config.RANDOM_START_POINT,
             )
 
-    def __cirlce_path(self, drone_id, simulator, center=None, radius=None):
+    def __cirlce_path(self, drone_id, simulator, center=None, radius=None) -> Path:
         if center is None:
             center = simulator.depot_coordinates
         if radius is None:
@@ -153,7 +150,7 @@ class PathManager:
         step_start = int(len(traj) / n_drones)
         return traj[(drone_id * step_start) :] + traj[: (drone_id * step_start)]
 
-    def __demo_path(self, drone_id):
+    def __demo_path(self, drone_id) -> Path:
         """Add handcrafted torus here."""
         tmp_path = {
             0: [(750, 750), (760, 750), (750, 750), (760, 750), (770, 750)],

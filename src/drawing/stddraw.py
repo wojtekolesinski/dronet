@@ -7,49 +7,54 @@ in the window.  As a convenience, the module also imports the
 commonly used Color objects defined in the color module.
 """
 
-from utilities import config
-import time
 import os
-import sys
-import pygame
-import pygame.gfxdraw
-import pygame.font
-from . import color
 import string
+import sys
+import time
+
+import pygame
+import pygame.font
+import pygame.gfxdraw
+
+import config
+
+from . import color
 
 if sys.hexversion < 0x03000000:
+    import tkFileDialog
     import Tkinter
     import tkMessageBox
-    import tkFileDialog
 else:
     import tkinter as Tkinter
-    import tkinter.messagebox as tkMessageBox
     import tkinter.filedialog as tkFileDialog
+    import tkinter.messagebox as tkMessageBox
 
 # -----------------------------------------------------------------------
 
 # Define colors so clients need not import the color module.
 
-from .color import WHITE
-from .color import BLACK
-from .color import RED
-from .color import GREEN
-from .color import BLUE
-from .color import CYAN
-from .color import MAGENTA
-from .color import YELLOW
-from .color import DARK_RED
-from .color import DARK_GREEN
-from .color import DARK_BLUE
-from .color import GRAY
-from .color import DARK_GRAY
-from .color import LIGHT_GRAY
-from .color import ORANGE
-from .color import VIOLET
-from .color import PINK
-from .color import BOOK_BLUE
-from .color import BOOK_LIGHT_BLUE
-from .color import BOOK_RED
+from .color import (
+    BLACK,
+    BLUE,
+    BOOK_BLUE,
+    BOOK_LIGHT_BLUE,
+    BOOK_RED,
+    CYAN,
+    DARK_BLUE,
+    DARK_GRAY,
+    DARK_GREEN,
+    DARK_RED,
+    GRAY,
+    GREEN,
+    LIGHT_GRAY,
+    MAGENTA,
+    ORANGE,
+    PINK,
+    RED,
+    VIOLET,
+    WHITE,
+    YELLOW,
+)
 
 # -----------------------------------------------------------------------
 
