@@ -47,9 +47,7 @@ class Event(Entity):
         # The deadline of an event represents the estimate of the drone that the event will be no more
         # interesting to monitor.
         self.deadline = (
-            current_time + self.simulator.event_duration
-            if deadline is None
-            else deadline
+            current_time + config.event_duration if deadline is None else deadline
         )
 
         # add metrics: all the events generated during the simulation
@@ -104,7 +102,7 @@ class Packet(Entity):
         self.time_step_creation = time_step_creation
         self.event_ref = event_ref_crafted
         self.__TTL = -1  # TTL is the number of hops that the packet crossed
-        self.__max_TTL = self.simulator.packets_max_ttl
+        self.__max_TTL = config.packets_max_ttl
         self.number_retransmission_attempt = 0
 
         # self.hops = set()  # All the drones that have received/transmitted the packets
@@ -120,9 +118,7 @@ class Packet(Entity):
         self.is_move_packet = None
 
     def distance_from_depot(self):
-        return utilities.euclidean_distance(
-            self.simulator.depot_coordinates, self.coords
-        )
+        return utilities.euclidean_distance(config.depot_coordinates, self.coords)
 
     def age_of_packet(self, cur_step):
         return cur_step - self.time_step_creation
@@ -231,7 +227,7 @@ class Depot(Entity):
 
         for pck in packets_to_offload:
 
-            if self.simulator.routing_algorithm.name not in "GEO" "RND" "GEOS":
+            if config.routing_algorithm.name not in "GEO" "RND" "GEOS":
 
                 feedback = 1
                 delivery_delay = cur_step - pck.event_ref.current_time
@@ -255,16 +251,15 @@ class Depot(Entity):
 class Drone(Entity):
 
     def __init__(self, identifier: int, path: list, depot: Depot, simulator):
-
         super().__init__(identifier, path[0], simulator)
 
         self.depot = depot
         self.path = path
-        self.speed = self.simulator.drone_speed
-        self.sensing_range = self.simulator.drone_sen_range
-        self.communication_range = self.simulator.drone_com_range
-        self.buffer_max_size = self.simulator.drone_max_buffer_size
-        self.residual_energy = self.simulator.drone_max_energy
+        self.speed = config.drone_speed
+        self.sensing_range = config.drone_sensing_range
+        self.communication_range = config.drone_communication_range
+        self.buffer_max_size = config.drone_max_buffer_size
+        self.residual_energy = config.drone_max_energy
         self.come_back_to_mission = (
             False  # if i'm coming back to my applicative mission
         )
@@ -282,9 +277,7 @@ class Drone(Entity):
         self.move_routing = False  # if true, it moves to the depot
 
         # setup drone routing algorithm
-        self.routing_algorithm = self.simulator.routing_algorithm.value(
-            self, self.simulator
-        )
+        self.routing_algorithm = config.routing_algorithm.value(self, self.simulator)
 
         # drone state simulator
 
@@ -313,7 +306,7 @@ class Drone(Entity):
 
                 to_remove_packets += 1
 
-                if self.simulator.routing_algorithm.name not in "GEO" "RND" "GEOS":
+                if config.routing_algorithm.name not in "GEO" "RND" "GEOS":
 
                     feedback = -1
                     current_drone = self
@@ -322,7 +315,7 @@ class Drone(Entity):
                         drone.routing_algorithm.feedback(
                             current_drone,
                             pck.event_ref.identifier,
-                            self.simulator.event_duration,
+                            config.event_duration,
                             feedback,
                         )
         self.__buffer = tmp_buffer
@@ -339,7 +332,7 @@ class Drone(Entity):
         time_to_depot = self.distance_from_depot / self.speed
         event_time_to_dead = (
             self.tightest_event_deadline - cur_step
-        ) * self.simulator.time_step_duration
+        ) * config.time_step_duration
         return (
             event_time_to_dead - 5 < time_to_depot <= event_time_to_dead
         )  # 5 seconds of tolerance
@@ -353,7 +346,7 @@ class Drone(Entity):
         p0 = self.coords
         p1 = self.path[current_waypoint + 1]
         all_distance = utilities.euclidean_distance(p0, p1)
-        distance = self.simulator.time_step_duration * self.speed
+        distance = config.time_step_duration * self.speed
         if all_distance == 0 or distance == 0:
             return self.path[current_waypoint]
 
