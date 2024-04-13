@@ -1,6 +1,6 @@
 """ To clean. """
 
-from src.utilities import config
+from utilities import config
 
 import pathlib
 import time
@@ -10,20 +10,20 @@ import pandas as pd
 import numpy as np
 import pickle
 from ast import literal_eval as make_tuple
-from src.utilities import random_waypoint_generation
+from utilities import random_waypoint_generation
 
 
 def compute_circle_path(radius: int, center: tuple) -> list:
-    """ compute a set of finite coordinates to simulate a circle trajectory of input radius around a given center
+    """compute a set of finite coordinates to simulate a circle trajectory of input radius around a given center
 
-        radius : int -> the radius of the trajectory
-        centers : tuple (x, y) the center of the trajectory
-        return a list of tuple (coordinates)
+    radius : int -> the radius of the trajectory
+    centers : tuple (x, y) the center of the trajectory
+    return a list of tuple (coordinates)
     """
     x = list(range(-radius, radius))
     coords = []
     for x_ in x:
-        y_ = radius ** 2 - (x_) ** 2
+        y_ = radius**2 - (x_) ** 2
         coords.append((x_, (y_ ** (0.5))))
     coords2 = coords[::-1]
     coords2 = [(x, -y) for x, y in coords2]
@@ -36,20 +36,20 @@ def date():
 
 
 def euclidean_distance(p1, p2):
-    """ Given points p1, p2 in R^2 it returns the norm of the vector connecting them.  """
+    """Given points p1, p2 in R^2 it returns the norm of the vector connecting them."""
     dist = ((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2) ** 0.5
     return dist
 
 
 def pickle_data(data, filename):
-    """ save the metrics on file """
-    with open(filename, 'wb') as out:
+    """save the metrics on file"""
+    with open(filename, "wb") as out:
         pickle.dump(data, out)
 
 
 def unpickle_data(filename):
-    """ load the metrics from a file """
-    with open(filename, 'rb') as handle:
+    """load the metrics from a file"""
+    with open(filename, "rb") as handle:
         obj = pickle.load(handle)
     return obj
 
@@ -91,7 +91,9 @@ class EventGenerator:
         :param drones: the drones where to sample the event
         :return: nothing
         """
-        if cur_step % self.simulator.event_generation_delay == 0:  # if it's time to generate a new packet
+        if (
+            cur_step % self.simulator.event_generation_delay == 0
+        ):  # if it's time to generate a new packet
             # drone that will receive the packet:
             drone_index = self.rnd_drones.randint(0, len(drones))
             drone = drones[drone_index]
@@ -103,9 +105,9 @@ class PathManager:
 
     def __init__(self, path_from_json: bool, json_file: str, seed: int):
         """
-            path_from_json : wheter generate or load the paths for the drones
-            json file to read for take the paths of drones
-            We assume json_file.format(seed)
+        path_from_json : wheter generate or load the paths for the drones
+        json file to read for take the paths of drones
+        We assume json_file.format(seed)
         """
         self.path_from_json = path_from_json
         self.json_file = json_file.format(seed)
@@ -117,13 +119,13 @@ class PathManager:
             self.rnd_paths = np.random.RandomState(seed)
 
     def path(self, drone_id, simulator):
-        """ takes the drone id and
-            returns a path (list of tuple)
-            for it.
+        """takes the drone id and
+        returns a path (list of tuple)
+        for it.
 
-            Notice that: the path can last
-            less or more than the simulation.
-            In the first case the path should be repeated.
+        Notice that: the path can last
+        less or more than the simulation.
+        In the first case the path should be repeated.
         """
         if config.DEMO_PATH:  # some demo paths
             return self.__demo_path(drone_id)
@@ -132,11 +134,14 @@ class PathManager:
         elif self.path_from_json:  # paths from loaded json
             return self.path_dict[drone_id]
         else:  # generate dynamic paths
-            return random_waypoint_generation.get_tour(simulator.drone_max_energy, simulator.env_width,
-                                                       simulator.depot_coordinates,
-                                                       random_generator=self.rnd_paths,
-                                                       range_decision=config.RANDOM_STEPS,
-                                                       random_starting_point=config.RANDOM_START_POINT)
+            return random_waypoint_generation.get_tour(
+                simulator.drone_max_energy,
+                simulator.env_width,
+                simulator.depot_coordinates,
+                random_generator=self.rnd_paths,
+                range_decision=config.RANDOM_STEPS,
+                random_starting_point=config.RANDOM_START_POINT,
+            )
 
     def __cirlce_path(self, drone_id, simulator, center=None, radius=None):
         if center is None:
@@ -146,15 +151,45 @@ class PathManager:
         n_drones = simulator.n_drones
         traj = compute_circle_path(radius, center)
         step_start = int(len(traj) / n_drones)
-        return traj[(drone_id * step_start):] + traj[:(drone_id * step_start)]
+        return traj[(drone_id * step_start) :] + traj[: (drone_id * step_start)]
 
     def __demo_path(self, drone_id):
-        """ Add handcrafted torus here.  """
-        tmp_path = {0: [(750, 750), (760, 750), (750, 750), (760, 750), (770, 750)],
-                    1: [(1280, 80), (460, 1050), (1060, 1050), (1060, 450), (460, 450), (0, 1500)],
-                    2: [(1320, 120), (460, 1050), (1060, 1050), (1060, 450), (460, 450), (0, 1500)],
-                    3: [(1400, 160), (460, 1050), (1060, 1050), (1060, 450), (460, 450), (0, 1500)],
-                    4: [(1500, 200), (460, 1050), (1060, 1050), (1060, 450), (460, 450), (0, 1500)]}
+        """Add handcrafted torus here."""
+        tmp_path = {
+            0: [(750, 750), (760, 750), (750, 750), (760, 750), (770, 750)],
+            1: [
+                (1280, 80),
+                (460, 1050),
+                (1060, 1050),
+                (1060, 450),
+                (460, 450),
+                (0, 1500),
+            ],
+            2: [
+                (1320, 120),
+                (460, 1050),
+                (1060, 1050),
+                (1060, 450),
+                (460, 450),
+                (0, 1500),
+            ],
+            3: [
+                (1400, 160),
+                (460, 1050),
+                (1060, 1050),
+                (1060, 450),
+                (460, 450),
+                (0, 1500),
+            ],
+            4: [
+                (1500, 200),
+                (460, 1050),
+                (1060, 1050),
+                (1060, 450),
+                (460, 450),
+                (0, 1500),
+            ],
+        }
         return tmp_path[drone_id]
 
 
@@ -162,21 +197,21 @@ class PathManager:
 
 
 def json_to_paths(json_file_path):
-    """ load the tour for drones
-        and return a dictionary {drone_id : list of waypoint}
+    """load the tour for drones
+    and return a dictionary {drone_id : list of waypoint}
 
-        e.g.,
-        accept json that contains:
-        {"drones": [{"index": "0", "tour": ["(1500, 0)", "(1637, 172)", ...
-                    (1500, 0)"]}, {"index": "1", "tour": ["(1500, 0)",
+    e.g.,
+    accept json that contains:
+    {"drones": [{"index": "0", "tour": ["(1500, 0)", "(1637, 172)", ...
+                (1500, 0)"]}, {"index": "1", "tour": ["(1500, 0)",
 
-        TOURS = {
-            0 : [(0,0), (2000,2000), (1500, 1500), (200, 2000)],
-            1 : [(0,0), (2000, 200), (200, 2000), (1500, 1500)]
-        }
+    TOURS = {
+        0 : [(0,0), (2000,2000), (1500, 1500), (200, 2000)],
+        1 : [(0,0), (2000, 200), (200, 2000), (1500, 1500)]
+    }
     """
     out_data = {}
-    with open(json_file_path, 'r') as in_file:
+    with open(json_file_path, "r") as in_file:
         data = json.load(in_file)
         for drone_data in data["drones"]:
             drone_index = int(drone_data["index"])
@@ -186,10 +221,11 @@ def json_to_paths(json_file_path):
             out_data[drone_index] = drone_path
     return out_data
 
+
 def clean_paths(json_file_path):
 
-    out_data = {"drones":[]}
-    with open(json_file_path, 'r') as in_file:
+    out_data = {"drones": []}
+    with open(json_file_path, "r") as in_file:
         data = json.load(in_file)
         for drone_data in data["drones"]:
             drone_index = int(drone_data["index"])
@@ -208,7 +244,7 @@ def clean_paths(json_file_path):
 
 
 class LimitedList:
-    """ Time window """
+    """Time window"""
 
     def __init__(self, threshold=None):
         self.llist = []
@@ -238,9 +274,17 @@ def plot_X(X, plt_title, plt_path, window_size=30, is_avg=True):
         to_plot_data = df.rolling(window_size).mean()[window_size:]
 
         plt.clf()
-        plt.plot(range(len(scatter_print)), to_plot_data, label="Moving Average-" + str(window_size))
+        plt.plot(
+            range(len(scatter_print)),
+            to_plot_data,
+            label="Moving Average-" + str(window_size),
+        )
         if is_avg:
-            plt.plot(range(len(scatter_print)), [np.average(scatter_print)] * len(scatter_print), label="avg")
+            plt.plot(
+                range(len(scatter_print)),
+                [np.average(scatter_print)] * len(scatter_print),
+                label="avg",
+            )
 
         plt.legend()
         plt.title(plt_title)
@@ -254,42 +298,49 @@ def plot_X(X, plt_title, plt_path, window_size=30, is_avg=True):
 """
 
 
-class PathToDepot():
+class PathToDepot:
 
     def __init__(self, x_position, simulator):
-        """ for now just a middle channel in the area used by all the drones """
+        """for now just a middle channel in the area used by all the drones"""
         self.x_position = x_position
         self.simulator = simulator
 
     def next_target(self, drone_pos):
-        """ based on the drone position return the next target:
-            |-> channel position or cluster head position
-            |-> the depot if the drones are already in the channel or have overpass the cluster head
+        """based on the drone position return the next target:
+        |-> channel position or cluster head position
+        |-> the depot if the drones are already in the channel or have overpass the cluster head
         """
         # only channel mode
-        if abs(drone_pos[
-                   0] - self.x_position) < 1:  # the drone is already on the channel with an error of 1 meter
+        if (
+            abs(drone_pos[0] - self.x_position) < 1
+        ):  # the drone is already on the channel with an error of 1 meter
             return self.simulator.depot_coordinates
         else:
             return self.x_position, drone_pos[1]  # the closest point to the channel
 
 
 def measure_scaler(measure, dom_start, dom_target):
-    """ Scales the measure value in the start domain [Type, min, max], in the target domain. """
-    return (measure - dom_start[1]) / (dom_start[2] - dom_start[1]) * (dom_target[2] - dom_target[1]) + dom_target[1]
+    """Scales the measure value in the start domain [Type, min, max], in the target domain."""
+    return (measure - dom_start[1]) / (dom_start[2] - dom_start[1]) * (
+        dom_target[2] - dom_target[1]
+    ) + dom_target[1]
 
 
 # -------------------- all cells computation ---------------------#
+
 
 class TraversedCells:
 
     @staticmethod
     def cells_in_travel(size_cell, width_area, start, end):
-        """ return the cell number in which the pos (x, y) lay """
+        """return the cell number in which the pos (x, y) lay"""
 
-        start_cell, coords_cell_start = TraversedCells.coord_to_cell(size_cell, width_area, start[0],
-                                                                     start[1])  # int, lower left coordinates
-        end_cell, coords_cell_end = TraversedCells.coord_to_cell(size_cell, width_area, end[0], end[1])
+        start_cell, coords_cell_start = TraversedCells.coord_to_cell(
+            size_cell, width_area, start[0], start[1]
+        )  # int, lower left coordinates
+        end_cell, coords_cell_end = TraversedCells.coord_to_cell(
+            size_cell, width_area, end[0], end[1]
+        )
 
         out_cells = []
 
@@ -309,11 +360,17 @@ class TraversedCells:
 
         # Diagonal line
         # Boundaries of the rectangle
-        min_x, max_x = min(coords_cell_start[0], coords_cell_end[0]), max(coords_cell_start[0], coords_cell_end[0])
-        min_y, max_y = min(coords_cell_start[1], coords_cell_end[1]), max(coords_cell_start[1], coords_cell_end[1])
+        min_x, max_x = min(coords_cell_start[0], coords_cell_end[0]), max(
+            coords_cell_start[0], coords_cell_end[0]
+        )
+        min_y, max_y = min(coords_cell_start[1], coords_cell_end[1]), max(
+            coords_cell_start[1], coords_cell_end[1]
+        )
 
         # All the cells of the rectangle, indices
-        coords_index = [(i, j) for i in range(min_x, max_x + 1) for j in range(min_y, max_y + 1)]
+        coords_index = [
+            (i, j) for i in range(min_x, max_x + 1) for j in range(min_y, max_y + 1)
+        ]
         for cell in coords_index:
 
             ll = cell[0] * size_cell, cell[1] * size_cell
@@ -329,10 +386,12 @@ class TraversedCells:
     @staticmethod
     def intersect_quad(start, end, ll, lr, ul, ur):
 
-        return (TraversedCells.intersect_segments(start, end, ll, lr)
-                or TraversedCells.intersect_segments(start, end, ul, ur)
-                or TraversedCells.intersect_segments(start, end, ul, ll)
-                or TraversedCells.intersect_segments(start, end, lr, ur))
+        return (
+            TraversedCells.intersect_segments(start, end, ll, lr)
+            or TraversedCells.intersect_segments(start, end, ul, ur)
+            or TraversedCells.intersect_segments(start, end, ul, ll)
+            or TraversedCells.intersect_segments(start, end, lr, ur)
+        )
 
     @staticmethod
     def intersect_segments(start1: tuple, end1: tuple, start2: tuple, end2: tuple):
@@ -358,27 +417,30 @@ class TraversedCells:
 
     @staticmethod
     def all_centers(widht_area, height_area, size_cell):
-        """ return all cell along their centers """
+        """return all cell along their centers"""
         all_cells_and_centers = []
         for x in range(0, widht_area, size_cell):
             for y in range(0, height_area, size_cell):
                 all_cells_and_centers.append(
-                    (TraversedCells.coord_to_cell(size_cell, widht_area, x, y),
-                     (x + (size_cell / 2.0), y + (size_cell / 2.0)))
+                    (
+                        TraversedCells.coord_to_cell(size_cell, widht_area, x, y),
+                        (x + (size_cell / 2.0), y + (size_cell / 2.0)),
+                    )
                 )
         return all_cells_and_centers
 
     @staticmethod
     def coord_to_cell(size_cell, width_area, x_pos, y_pos):
-        """ return the cell number in which the pos (x"abs", y"abs") lay """
+        """return the cell number in which the pos (x"abs", y"abs") lay"""
         x_cell_coords = int(x_pos / size_cell)
         y_cell_coords = int(y_pos / size_cell)
-        return TraversedCells.cell_coord_to_cell_number(size_cell, width_area, x_cell_coords,
-                                                        y_cell_coords), (x_cell_coords, y_cell_coords)
+        return TraversedCells.cell_coord_to_cell_number(
+            size_cell, width_area, x_cell_coords, y_cell_coords
+        ), (x_cell_coords, y_cell_coords)
 
     @staticmethod
     def cell_coord_to_cell_number(size_cell, width_area, x_cell_coords, y_cell_coords):
-        """ return the number o the cells given the indexes """
+        """return the number o the cells given the indexes"""
 
         x_cells = np.ceil(width_area / size_cell)  # numero di celle su X
         return x_cell_coords + (x_cells * y_cell_coords)
@@ -388,5 +450,5 @@ if __name__ == "__main__":
 
     out_data = clean_paths("data/tours/RANDOM_missions0.json")
 
-    with open("data/tours/RANDOM_missions0.json", 'w') as outfile:
+    with open("data/tours/RANDOM_missions0.json", "w") as outfile:
         json.dump(out_data, outfile)

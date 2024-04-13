@@ -1,5 +1,5 @@
-from src.routing_algorithms.BASE_routing import BASE_routing
-from src.utilities.utilities import euclidean_distance
+from routing_algorithms.BASE_routing import BASE_routing
+from utilities.utilities import euclidean_distance
 
 
 class GeoRouting(BASE_routing):

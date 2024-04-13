@@ -1,13 +1,13 @@
-from src.utilities.experiments_config import *
-from src.experiments.parser.parser import command_line_parser
-from src.utilities import config
-from src.simulation.simulator import Simulator
+from utilities.experiments_config import *
+from experiments.parser.parser import command_line_parser
+from utilities import config
+from simulation.simulator import Simulator
 import os
 
 
 def sim_setup(n_drones, seed, algorithm):
     """
-    Build an instance of Simulator using the parameters from src.utilities.experiments_config.py
+    Build an instance of Simulator using the parameters from utilities.experiments_config.py
     @param n_drones: the number of drones during the simulation
     @param seed: the simulation seed
     @param algorithm: the algorithm used to route the packets
@@ -21,7 +21,6 @@ def sim_setup(n_drones, seed, algorithm):
         n_drones=n_drones,
         env_width=env_width,
         env_height=env_height,
-
         drone_com_range=drone_com_range,
         drone_sen_range=drone_sen_range,
         drone_speed=drone_speed,
@@ -30,20 +29,16 @@ def sim_setup(n_drones, seed, algorithm):
         drone_retransmission_delta=drone_retransmission_delta,
         drone_communication_success=drone_communication_success,
         event_generation_delay=event_generation_delay,
-
         depot_com_range=depot_com_range,
         depot_coordinates=depot_coordinates,
-
         event_duration=event_duration,
         event_generation_prob=event_generation_prob,
         packets_max_ttl=packets_max_ttl,
         routing_algorithm=config.RoutingAlgorithm[algorithm],
         communication_error_type=config.ChannelError.GAUSSIAN,
         show_plot=show_plot,
-
         # ML parameters
         simulation_name="",
-
     )
 
 

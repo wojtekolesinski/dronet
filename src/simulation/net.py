@@ -12,12 +12,9 @@ class MediumDispatcher:
     def send_packet_to_medium(self, packet, src_drone, dst_drone, to_send_ts):
 
         if isinstance(packet, DataPacket):
-
             # self.metric_class.all_data_packets_in_simulation += 1
             pass
-
         else:
-
             self.metric_class.all_control_packets_in_simulation += 1
 
         self.packets.append((packet, src_drone, dst_drone, to_send_ts))
@@ -30,24 +27,33 @@ class MediumDispatcher:
         for i in range(len(original_self_packets)):
             packet, src_drone, dst_drone, to_send_ts = original_self_packets[i]
 
-            if to_send_ts == current_ts:  # time to send this packet
-                to_drop_indices.append(i)
+            # not time to send this packet
+            if to_send_ts != current_ts:
+                continue
 
-                if src_drone.identifier != dst_drone.identifier:
-                    drones_distance = util.euclidean_distance(
-                        src_drone.coords, dst_drone.coords
-                    )
-                    if drones_distance <= min(
-                        src_drone.communication_range, dst_drone.communication_range
-                    ):
+            to_drop_indices.append(i)
 
-                        if dst_drone.routing_algorithm.channel_success(
-                            drones_distance, no_error=True
-                        ):
+            # cannot send packets to self
+            if src_drone.identifier == dst_drone.identifier:
+                continue
 
-                            dst_drone.routing_algorithm.drone_reception(
-                                src_drone, packet, current_ts
-                            )  # reception of a packet
+            drones_distance = util.euclidean_distance(
+                src_drone.coords, dst_drone.coords
+            )
+
+            # check if drones are in range
+            if drones_distance > min(
+                src_drone.communication_range, dst_drone.communication_range
+            ):
+                continue
+
+            if dst_drone.routing_algorithm.channel_success(
+                drones_distance, no_error=True
+            ):
+                # reception of a packet
+                dst_drone.routing_algorithm.drone_reception(
+                    src_drone, packet, current_ts
+                )
 
         original_self_packets = [
             original_self_packets[i]

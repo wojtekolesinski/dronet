@@ -30,8 +30,8 @@ The script plot_data.py can be run using python -m src.plots.plot_data
 # ***EXAMPLE*** #
 import matplotlib.pyplot as plt
 import numpy as np
-from src.experiments.json_and_plot import ALL_SIZE
-from src.plots.config import PLOT_DICT, LABEL_SIZE, LEGEND_SIZE
+from experiments.json_and_plot import ALL_SIZE
+from plots.config import PLOT_DICT, LABEL_SIZE, LEGEND_SIZE
 
 
 def plot(algorithm: list,

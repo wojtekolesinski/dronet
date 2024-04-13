@@ -17,21 +17,13 @@ OTHER_SIZES = 20
 METRICS_OF_INTEREST = [
     "number_of_packets_to_depot",
     "packet_mean_delivery_time",
-    "mean_number_of_relays"]
+    "mean_number_of_relays",
+]
 
 SCALE_LIM_DICT = {
-    "number_of_packets_to_depot": {
-        "scale": "linear",
-        "ylim": (0, 1000)
-    },
-    "packet_mean_delivery_time": {
-        "scale": "linear",
-        "ylim": (0, 5)
-    },
-    "mean_number_of_relays": {
-        "scale": "linear",
-        "ylim": (0, 10)
-    }
+    "number_of_packets_to_depot": {"scale": "linear", "ylim": (0, 1000)},
+    "packet_mean_delivery_time": {"scale": "linear", "ylim": (0, 5)},
+    "mean_number_of_relays": {"scale": "linear", "ylim": (0, 10)},
 }
 
 PLOT_DICT = {
@@ -41,7 +33,7 @@ PLOT_DICT = {
         "linestyle": "-",
         "color": plt.cm.tab10(0),
         "label": "Algo 1",
-        "x_ticks_positions": np.array(np.linspace(0, 8, 5))
+        "x_ticks_positions": np.array(np.linspace(0, 8, 5)),
     },
     "algo_2": {
         "hatch": "",
@@ -49,8 +41,7 @@ PLOT_DICT = {
         "linestyle": "-",
         "color": plt.cm.tab10(1),
         "label": "Algo 2",
-        "x_ticks_positions": np.array(np.linspace(0, 8, 5))
-
+        "x_ticks_positions": np.array(np.linspace(0, 8, 5)),
     },
     "algo_n": {
         "hatch": "",
@@ -58,9 +49,8 @@ PLOT_DICT = {
         "linestyle": "-",
         "color": plt.cm.tab10(8),
         "label": "Algo n",
-        "x_ticks_positions": np.array(np.linspace(0, 8, 5))
-
-    }
+        "x_ticks_positions": np.array(np.linspace(0, 8, 5)),
+    },
 }
 
 # *** EXAMPLE ***
