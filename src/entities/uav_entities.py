@@ -5,21 +5,11 @@ from simulation.metrics import Metrics
 from utilities import utilities
 
 
-class SimulatedEntity:
-    """A simulated entity keeps track of the simulation object, where you can access all the parameters
-    of the simulation. No class of this type is directly instantiable.
-    """
-
-    def __init__(self, simulator):
-        self.simulator = simulator
-
-
 # ------------------ Entities ----------------------
-class Entity(SimulatedEntity):
+class Entity:
     """An entity in the environment, e.g. Drone, Event, Packet. It extends SimulatedEntity."""
 
-    def __init__(self, identifier: int, coords: tuple, simulator):
-        super().__init__(simulator)
+    def __init__(self, identifier: int, coords: tuple):
         self.identifier = identifier  # the id of the entity
         self.coords = coords  # the coordinates of the entity on the map
 
@@ -39,8 +29,8 @@ class Entity(SimulatedEntity):
 class Event(Entity):
     """An event is any kind of event that the drone detects on the aoi. It is an Entity."""
 
-    def __init__(self, coords: tuple, current_time: int, simulator, deadline=None):
-        super().__init__(id(self), coords, simulator)
+    def __init__(self, coords: tuple, current_time: int, deadline: int | None = None):
+        super().__init__(id(self), coords)
         self.current_time = current_time
 
         # One can specify the deadline or just consider as deadline now + EVENTS_DURATION
@@ -74,7 +64,7 @@ class Event(Entity):
         """
         # Notice: called only when a packet is created
 
-        pck = DataPacket(time_step_creation, self.simulator, event_ref=self)
+        pck = DataPacket(time_step_creation, event_ref=self)
         # if config.DEBUG_PRINT_PACKETS: print("data", pck, pck.src_drone, pck.dst_drone, self.current_time)
         pck.add_hop(drone)
         return pck
@@ -87,17 +77,17 @@ class Event(Entity):
 class Packet(Entity):
     """A packet is an object created out of an event monitored on the aoi."""
 
-    def __init__(self, time_step_creation, simulator, event_ref: Event = None):
+    def __init__(self, time_step_creation, event_ref: Event = None):
         """the event associated to the packet, time step in which the packet was created
         as for now, every packet is an event."""
 
         event_ref_crafted = (
-            event_ref if event_ref is not None else Event((-1, -1), -1, simulator)
+            event_ref if event_ref is not None else Event((-1, -1), -1)
         )  # default event if packet is not associated to the event
 
         # id(self) is the id of this instance (unique for every new created packet),
         # the coordinates are those of the event
-        super().__init__(id(self), event_ref_crafted.coords, simulator)
+        super().__init__(id(self), event_ref_crafted.coords)
 
         self.time_step_creation = time_step_creation
         self.event_ref = event_ref_crafted
@@ -175,15 +165,13 @@ class Packet(Entity):
 class DataPacket(Packet):
     """Basically a Packet"""
 
-    def __init__(self, time_step_creation, simulator, event_ref: Event = None):
-        super().__init__(time_step_creation, simulator, event_ref)
+    def __init__(self, time_step_creation, event_ref: Event = None):
+        super().__init__(time_step_creation, event_ref)
 
 
 class ACKPacket(Packet):
-    def __init__(
-        self, src_drone, dst_drone, simulator, acked_packet, time_step_creation=None
-    ):
-        super().__init__(time_step_creation, simulator, None)
+    def __init__(self, src_drone, dst_drone, acked_packet, time_step_creation=None):
+        super().__init__(time_step_creation, None)
         self.acked_packet = (
             acked_packet  # packet that the drone who creates it wants to ACK
         )
@@ -196,10 +184,8 @@ class ACKPacket(Packet):
 class HelloPacket(Packet):
     """The hello message is responsible to give info about neighborhood"""
 
-    def __init__(
-        self, src_drone, time_step_creation, simulator, cur_pos, speed, next_target
-    ):
-        super().__init__(time_step_creation, simulator, None)
+    def __init__(self, src_drone, time_step_creation, cur_pos, speed, next_target):
+        super().__init__(time_step_creation, None)
         self.cur_pos = cur_pos
         self.speed = speed
         self.next_target = next_target
@@ -211,9 +197,10 @@ class Depot(Entity):
     """The depot is an Entity."""
 
     def __init__(self, coords, communication_range, simulator):
-        super().__init__(id(self), coords, simulator)
+        super().__init__(id(self), coords)
         self.communication_range = communication_range
 
+        self.simulator = simulator
         self.__buffer = list()  # also with duplicated packets
 
     def all_packets(self):
@@ -251,7 +238,9 @@ class Depot(Entity):
 class Drone(Entity):
 
     def __init__(self, identifier: int, path: list, depot: Depot, simulator):
-        super().__init__(identifier, path[0], simulator)
+        super().__init__(identifier, path[0])
+
+        self.simulator = simulator
 
         self.depot = depot
         self.path = path
@@ -365,7 +354,7 @@ class Drone(Entity):
             if the drones is doing movement the packet is not added in the buffer
         """
 
-        ev = Event(self.coords, cur_step, self.simulator)  # the event
+        ev = Event(self.coords, cur_step)  # the event
         pk = ev.as_packet(cur_step, self)  # the packet of the event
         if not self.move_routing and not self.come_back_to_mission:
             self.__buffer.append(pk)

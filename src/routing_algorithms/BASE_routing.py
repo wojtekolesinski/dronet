@@ -40,9 +40,7 @@ class BASE_routing(metaclass=abc.ABCMeta):
             self.no_transmission = True
             self.drone.accept_packets([packet])
             # build ack for the reception
-            ack_packet = ACKPacket(
-                self.drone, src_drone, self.simulator, packet, current_ts
-            )
+            ack_packet = ACKPacket(self.drone, src_drone, packet, current_ts)
             self.unicast_message(ack_packet, self.drone, src_drone, current_ts)
 
         elif isinstance(packet, ACKPacket):
@@ -62,7 +60,6 @@ class BASE_routing(metaclass=abc.ABCMeta):
         my_hello = HelloPacket(
             self.drone,
             cur_step,
-            self.simulator,
             self.drone.coords,
             self.drone.speed,
             self.drone.next_target(),
