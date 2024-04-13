@@ -6,6 +6,8 @@
 #                                                           #
 #-----------------------------------------------------------#
 
+set -e
+export PYTHONPATH="src"
 
 #test others algorithms
 for nd in "5" "10" ;
