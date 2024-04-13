@@ -5,9 +5,9 @@ from simulation.metrics import Metrics
 
 class MediumDispatcher:
 
-    def __init__(self, metric_class: Metrics):
+    def __init__(self):
         self.packets = []
-        self.metric_class = metric_class
+        self.metric_class = Metrics.instance()
 
     def send_packet_to_medium(self, packet, src_drone, dst_drone, to_send_ts):
 

@@ -8,8 +8,6 @@ import pandas as pd
 import seaborn as sb
 
 import config
-from entities.uav_entities import DataPacket
-from utilities import utilities as util
 
 """ Metrics class keeps track of all the metrics during all the simulation. """
 

@@ -4,6 +4,7 @@ from scipy.stats import norm
 
 import config
 from entities.uav_entities import ACKPacket, DataPacket, HelloPacket, Packet
+from simulation.metrics import Metrics
 from utilities import utilities as util
 
 
@@ -115,7 +116,7 @@ class BASE_routing(metaclass=abc.ABCMeta):
             # send packets
             for pkd in self.drone.all_packets():
 
-                self.simulator.metrics.mean_numbers_of_possible_relays.append(
+                Metrics.instance().mean_numbers_of_possible_relays.append(
                     len(opt_neighbors)
                 )
 

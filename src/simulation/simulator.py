@@ -8,8 +8,8 @@ from tqdm import tqdm
 import config
 from drawing import pp_draw
 from entities.uav_entities import *
-from routing_algorithms.net_routing import MediumDispatcher
 from simulation.metrics import Metrics
+from simulation.net import MediumDispatcher
 from utilities import utilities
 
 """
@@ -110,7 +110,7 @@ class Simulator:
         )
 
     def __setup_net_dispatcher(self):
-        self.network_dispatcher = MediumDispatcher(self.metrics)
+        self.network_dispatcher = MediumDispatcher()
 
     def __set_metrics(self):
         """the method sets up all the parameters in the metrics class"""
