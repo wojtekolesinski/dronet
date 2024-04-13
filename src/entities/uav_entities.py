@@ -532,21 +532,19 @@ class Drone(Entity):
 
 
 # ------------------ Environment ----------------------
-class Environment(SimulatedEntity):
+class Environment:
     """The environment is an entity that represents the area of interest on which events are generated.
     WARNING this corresponds to an old view we had, according to which the events are generated on the map at
     random and then maybe felt from the drones. Now events are generated on the drones that they feel with
     a certain probability."""
 
-    def __init__(self, width, height, simulator):
-        super().__init__(simulator)
-
+    def __init__(self, width, height):
         self.depot = None
         self.drones = None
         self.width = width
         self.height = height
 
-        self.event_generator = EventGenerator(height, width, simulator)
+        self.event_generator = EventGenerator(height, width)
         self.active_events = []
 
     def add_drones(self, drones: list):
@@ -558,18 +556,18 @@ class Environment(SimulatedEntity):
         self.depot = depot
 
 
-class EventGenerator(SimulatedEntity):
+class EventGenerator:
 
-    def __init__(self, height, width, simulator):
+    def __init__(self, height, width):
         """uniform event generator"""
-        super().__init__(simulator)
         self.height = height
         self.width = width
+        self.rnd_env = np.random.RandomState(config.seed)
 
     def uniform_event_generator(self):
         """generates an event in the map"""
-        x = self.simulator.rnd_env.randint(0, self.height)
-        y = self.simulator.rnd_env.randint(0, self.width)
+        x = self.rnd_env.randint(0, self.height)
+        y = self.rnd_env.randint(0, self.width)
         return x, y
 
     def poisson_event_generator(self):

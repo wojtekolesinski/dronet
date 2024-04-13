@@ -143,7 +143,6 @@ class Simulator:
         if self.seed is not None:
             self.rnd_network = np.random.RandomState(self.seed)
             self.rnd_routing = np.random.RandomState(self.seed)
-            self.rnd_env = np.random.RandomState(self.seed)
             self.rnd_event = np.random.RandomState(self.seed)
 
     def __set_simulation(self):
@@ -154,7 +153,7 @@ class Simulator:
         self.path_manager = utilities.PathManager(
             config.PATH_FROM_JSON, config.JSONS_PATH_PREFIX, self.seed
         )
-        self.environment = Environment(self.env_width, self.env_height, self)
+        self.environment = Environment(self.env_width, self.env_height)
 
         self.depot = Depot(self.depot_coordinates, self.depot_com_range, self)
 
