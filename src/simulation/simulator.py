@@ -85,7 +85,7 @@ class Simulator:
 
         # Setup vari
         # for stats
-        self.metrics = Metrics(self)
+        self.metrics = Metrics.instance()
 
         # setup network
         self.__setup_net_dispatcher()
@@ -114,7 +114,30 @@ class Simulator:
 
     def __set_metrics(self):
         """the method sets up all the parameters in the metrics class"""
-        self.metrics.info_mission()
+        self.metrics.info_mission(
+            {
+                "len_simulation": self.len_simulation,
+                "time_step_duration": self.time_step_duration,
+                "seed": self.seed,
+                "n_drones": self.n_drones,
+                "env_width": self.env_width,
+                "env_height": self.env_height,
+                "drone_com_range": self.drone_com_range,
+                "drone_sen_range": self.drone_sen_range,
+                "drone_speed": self.drone_speed,
+                "drone_max_buffer_size": self.drone_max_buffer_size,
+                "drone_max_energy": self.drone_max_energy,
+                "drone_retransmission_delta": self.drone_retransmission_delta,
+                "drone_communication_success": self.drone_communication_success,
+                "depot_com_range": self.depot_com_range,
+                "depot_coordinates": self.depot_coordinates,
+                "event_duration": self.event_duration,
+                "packets_max_ttl": self.packets_max_ttl,
+                "show_plot": self.show_plot,
+                "routing_algorithm": str(self.routing_algorithm),
+                "communication_error_type": str(self.communication_error_type),
+            }
+        )
 
     def __set_random_generators(self):
         if self.seed is not None:

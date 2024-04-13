@@ -15,10 +15,16 @@ from utilities import utilities as util
 
 
 class Metrics:
+    _instance = None
 
-    def __init__(self, simulator):
+    @classmethod
+    def instance(cls) -> "Metrics":
+        if cls._instance is None:
+            cls._instance = Metrics()
+        return cls._instance
 
-        self.simulator = simulator
+    def __init__(self):
+        print("Metrics")
 
         # The mean number of possible relays when i want to communicate
         self.mean_numbers_of_possible_relays = []
@@ -98,10 +104,10 @@ class Metrics:
         # averaged delays over all packets/events
         self.event_delivery_times = event_delivery_times
         self.packet_mean_delivery_time = (
-            np.mean(packet_delivery_times) * self.simulator.time_step_duration
+            np.mean(packet_delivery_times) * config.TS_DURATION
         )
         self.event_mean_delivery_time = (
-            np.mean(event_delivery_times) * self.simulator.time_step_duration
+            np.mean(event_delivery_times) * config.TS_DURATION
         )
 
     def print_overall_stats(self):
@@ -138,35 +144,16 @@ class Metrics:
             / self.all_data_packets_in_simulation,
         )
 
-    def info_mission(self):
+    def info_mission(self, mission_setup):
         """
         save all the mission / sim setup
         @return: None
         """
 
-        self.mission_setup = {
-            "len_simulation": self.simulator.len_simulation,
-            "time_step_duration": self.simulator.time_step_duration,
-            "seed": self.simulator.seed,
-            "n_drones": self.simulator.n_drones,
-            "env_width": self.simulator.env_width,
-            "env_height": self.simulator.env_height,
-            "drone_com_range": self.simulator.drone_com_range,
-            "drone_sen_range": self.simulator.drone_sen_range,
-            "drone_speed": self.simulator.drone_speed,
-            "drone_max_buffer_size": self.simulator.drone_max_buffer_size,
-            "drone_max_energy": self.simulator.drone_max_energy,
-            "drone_retransmission_delta": self.simulator.drone_retransmission_delta,
-            "drone_communication_success": self.simulator.drone_communication_success,
-            "depot_com_range": self.simulator.depot_com_range,
-            "depot_coordinates": self.simulator.depot_coordinates,
-            "event_duration": self.simulator.event_duration,
-            "packets_max_ttl": self.simulator.packets_max_ttl,
-            "show_plot": self.simulator.show_plot,
-            "routing_algorithm": str(self.simulator.routing_algorithm),
-            "communication_error_type": str(self.simulator.communication_error_type),
-            "time_on_active_routing": str(self.time_on_active_routing),
-        }
+        self.mission_setup = mission_setup
+        self.mission_setup["time_on_active_routing"] = (
+            str(self.time_on_active_routing),
+        )
 
     def __dictionary_represenation(self):
         """compute the dictionary to save as json"""
