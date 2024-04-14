@@ -161,9 +161,7 @@ class Simulator:
 
         # drone 0 is the first
         for i in range(self.n_drones):
-            self.drones.append(
-                Drone(i, self.path_manager.path(i, self), self.depot, self)
-            )
+            self.drones.append(Drone(i, self.path_manager.path(i), self.depot, self))
 
         self.environment.add_drones(self.drones)
         self.environment.add_depot(self.depot)

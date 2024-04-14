@@ -2,6 +2,7 @@ import numpy as np
 
 import config
 from simulation.metrics import Metrics
+from src.utilities.types import Point
 from utilities import utilities
 
 
@@ -9,7 +10,7 @@ from utilities import utilities
 class Entity:
     """An entity in the environment, e.g. Drone, Event, Packet. It extends SimulatedEntity."""
 
-    def __init__(self, identifier: int, coords: tuple):
+    def __init__(self, identifier: int, coords: Point):
         self.identifier = identifier  # the id of the entity
         self.coords = coords  # the coordinates of the entity on the map
 
@@ -29,7 +30,7 @@ class Entity:
 class Event(Entity):
     """An event is any kind of event that the drone detects on the aoi. It is an Entity."""
 
-    def __init__(self, coords: tuple, current_time: int, deadline: int | None = None):
+    def __init__(self, coords: Point, current_time: int, deadline: int | None = None):
         super().__init__(id(self), coords)
         self.current_time = current_time
 
@@ -54,7 +55,7 @@ class Event(Entity):
             "id": self.identifier,
         }
 
-    def is_expired(self, cur_step):
+    def is_expired(self, cur_step: int):
         """return true if the deadline expired"""
         return cur_step > self.deadline
 
