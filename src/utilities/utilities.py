@@ -387,7 +387,9 @@ class TraversedCells:
         return 0 <= t <= 1
 
     @staticmethod
-    def all_centers(widht_area, height_area, size_cell):
+    def all_centers(
+        widht_area: int, height_area: int, size_cell: int
+    ) -> list[tuple[tuple[int, Point], Point]]:
         """return all cell along their centers"""
         all_cells_and_centers = []
         for x in range(0, widht_area, size_cell):
@@ -401,7 +403,9 @@ class TraversedCells:
         return all_cells_and_centers
 
     @staticmethod
-    def coord_to_cell(size_cell, width_area, x_pos, y_pos):
+    def coord_to_cell(
+        size_cell: int, width_area: int, x_pos: int, y_pos: int
+    ) -> tuple[int, Point]:
         """return the cell number in which the pos (x"abs", y"abs") lay"""
         x_cell_coords = int(x_pos / size_cell)
         y_cell_coords = int(y_pos / size_cell)
@@ -410,7 +414,9 @@ class TraversedCells:
         ), (x_cell_coords, y_cell_coords)
 
     @staticmethod
-    def cell_coord_to_cell_number(size_cell, width_area, x_cell_coords, y_cell_coords):
+    def cell_coord_to_cell_number(
+        size_cell: int, width_area: int, x_cell_coords: int, y_cell_coords: int
+    ) -> int:
         """return the number o the cells given the indexes"""
 
         x_cells = np.ceil(width_area / size_cell)  # numero di celle su X
