@@ -173,7 +173,10 @@ class Simulator:
 
         if self.show_plot or config.SAVE_PLOT:
             self.draw_manager = pp_draw.PathPlanningDrawer(
-                self.environment, self, borders=True
+                self.environment.width,
+                self.environment.height,
+                self.prob_size_cell,
+                borders=True,
             )
 
     def __sim_name(self):
