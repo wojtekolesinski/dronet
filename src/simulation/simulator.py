@@ -175,6 +175,7 @@ class Simulator:
             self.draw_manager = pp_draw.PathPlanningDrawer(
                 self.environment.width,
                 self.environment.height,
+                self.cell_prob_map,
                 self.prob_size_cell,
                 borders=True,
             )

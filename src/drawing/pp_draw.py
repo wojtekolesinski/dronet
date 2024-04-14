@@ -11,13 +11,20 @@ class PathPlanningDrawer:
 
     # init the drawer for the path planning
     def __init__(
-        self, width: int, height: int, prob_size_cell, borders=False, padding=25
+        self,
+        width: int,
+        height: int,
+        cell_prob_map,
+        prob_size_cell,
+        borders=False,
+        padding=25,
     ):
         """init the path plannind drawer"""
         self.width = width
         self.height = height
         self.borders = borders
         self.prob_size_cell = prob_size_cell
+        self.cell_prob_map = cell_prob_map
         stddraw.setXscale(0 - padding, self.width + padding)
         stddraw.setYscale(0 - padding, self.height + padding)
         if self.borders:
@@ -64,7 +71,7 @@ class PathPlanningDrawer:
             self.width, self.height, self.prob_size_cell
         ):
             index_cell = int(cell[0])
-            pr = self.simulator.cell_prob_map[index_cell][2]
+            pr = self.cell_prob_map[index_cell][2]
             stddraw.text(cell_center[0], cell_center[1], "pr-c: " + str(round(pr, 4)))
 
     def __reset_pen(self):
