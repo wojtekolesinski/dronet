@@ -3,12 +3,19 @@ from entities.base import Entity
 from entities.event import Event
 from simulation.metrics import Metrics
 from utilities import utilities
+from utilities.types import NetAddr, Point
 
 
 class Packet(Entity):
     """A packet is an object created out of an event monitored on the aoi."""
 
-    def __init__(self, time_step_creation: int, event_ref: Event | None = None):
+    def __init__(
+        self,
+        source: NetAddr,
+        destination: NetAddr,
+        timestamp: int,
+        event_ref: Event | None = None,
+    ):
         """the event associated to the packet, time step in which the packet was created
         as for now, every packet is an event."""
 
@@ -20,7 +27,9 @@ class Packet(Entity):
         # the coordinates are those of the event
         super().__init__(id(self), event_ref_crafted.coords)
 
-        self.time_step_creation = time_step_creation
+        self.source = source
+        self.destination = destination
+        self.timestamp = timestamp
         self.event_ref = event_ref_crafted
         self.__TTL = -1  # TTL is the number of hops that the packet crossed
         self.__max_TTL = config.packets_max_ttl
@@ -42,14 +51,14 @@ class Packet(Entity):
         return utilities.euclidean_distance(config.depot_coordinates, self.coords)
 
     def age_of_packet(self, cur_step: int):
-        return cur_step - self.time_step_creation
+        return cur_step - self.timestamp
 
     def to_json(self):
         """return the json repr of the obj"""
 
         return {
             "coord": self.coords,
-            "i_gen": self.time_step_creation,
+            "i_gen": self.timestamp,
             "i_dead": self.event_ref.deadline,
             "id": self.identifier,
             "TTL": self.__TTL,
@@ -96,28 +105,45 @@ class Packet(Entity):
 class DataPacket(Packet):
     """Basically a Packet"""
 
-    def __init__(self, time_step_creation, event_ref: Event = None, first_hop=None):
-        super().__init__(time_step_creation, event_ref)
+    def __init__(
+        self,
+        source: NetAddr,
+        destination: NetAddr,
+        timestamp: int,
+        event_ref: Event | None = None,
+    ):
+        super().__init__(source, destination, timestamp, event_ref)
 
 
 class ACKPacket(Packet):
-    def __init__(self, src_drone, dst_drone, acked_packet, time_step_creation=None):
-        super().__init__(time_step_creation, None)
-        self.acked_packet = (
-            acked_packet  # packet that the drone who creates it wants to ACK
+    def __init__(
+        self,
+        source: NetAddr,
+        destination: NetAddr,
+        timestamp: int,
+        acked_packet_id: int,
+        event_ref: Event | None = None,
+    ):
+        super().__init__(source, destination, timestamp, event_ref)
+        self.acked_packet_id = (
+            acked_packet_id  # packet that the drone who creates it wants to ACK
         )
-
-        # source and destination of a packet
-        self.src_drone = src_drone
-        self.dst_drone = dst_drone
 
 
 class HelloPacket(Packet):
     """The hello message is responsible to give info about neighborhood"""
 
-    def __init__(self, src_drone, time_step_creation, cur_pos, speed, next_target):
-        super().__init__(time_step_creation, None)
+    def __init__(
+        self,
+        source: NetAddr,
+        destination: NetAddr,
+        timestamp: int,
+        cur_pos: Point,
+        speed: int,
+        next_target: Point,
+        event_ref: Event | None = None,
+    ):
+        super().__init__(source, destination, timestamp, event_ref)
         self.cur_pos = cur_pos
         self.speed = speed
         self.next_target = next_target
-        self.src_drone = src_drone  # Don't use this

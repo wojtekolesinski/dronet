@@ -6,8 +6,9 @@ from entities.event import Event
 from entities.packets import DataPacket
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
+from simulation.simulator import Simulator
 from utilities import utilities
-from utilities.types import Point
+from utilities.types import NetAddr, Point
 
 
 # ------------------ Depot ----------------------
@@ -53,19 +54,70 @@ class Depot(Entity):
 
 
 # ------------------ Drone ----------------------
-class Drone(Entity):
+class CommunicatingEntity(Entity):
 
-    def __init__(self, identifier: int, path: list, depot: Depot, simulator):
-        super().__init__(identifier, path[0])
+    def __init__(
+        self,
+        identifier: int,
+        coords: Point,
+        address: NetAddr,
+        network: MediumDispatcher,
+        sensing_range: int,
+        communication_range: int,
+        buffer_size: int,
+    ):
+        super().__init__(identifier, coords)
+        self.address = address
+        self.network = network
+        self.sensing_range = sensing_range
+        self.communication_range = communication_range
+        self.buffer_size = buffer_size
+        self.__buffer = []  # contains the packets
+        self.no_transmission = False
+
+    def listen(self):
+        packets = self.network.listen(
+            self.address, self.coords, self.communication_range
+        )
+        self.__buffer.extend(packets)
+
+    def empty_buffer(self):
+        self.__buffer = []
+
+    def all_packets(self):
+        return self.__buffer
+
+    def buffer_length(self):
+        return len(self.__buffer)
+
+
+
+
+class Drone(CommunicatingEntity):
+
+    def __init__(
+        self,
+        identifier: int,
+        address: NetAddr,
+        network: MediumDispatcher,
+        path: list,
+        depot: Depot,
+        simulator: Simulator,
+    ):
+        super().__init__(
+            identifier,
+            path[0],
+            address,
+            network,
+            config.drone_sensing_range,
+            config.drone_communication_range,
+            config.drone_max_buffer_size,
+        )
 
         self.simulator = simulator
-
         self.depot = depot
         self.path = path
         self.speed = config.drone_speed
-        self.sensing_range = config.drone_sensing_range
-        self.communication_range = config.drone_communication_range
-        self.buffer_max_size = config.drone_max_buffer_size
         self.residual_energy = config.drone_max_energy
         self.come_back_to_mission = (
             False  # if i'm coming back to my applicative mission
@@ -77,16 +129,11 @@ class Drone(Entity):
             None  # used later to check if there is an event that is about to expire
         )
         self.current_waypoint = 0
-
-        self.__buffer = []  # contains the packets
-
         self.distance_from_depot = 0
         self.move_routing = False  # if true, it moves to the depot
 
         # setup drone routing algorithm
         self.routing_algorithm = config.routing_algorithm.value(self, self.simulator)
-
-        # drone state simulator
 
         # last mission coord to restore the mission after movement
         self.last_mission_coords = None
@@ -237,15 +284,6 @@ class Drone(Entity):
                 return True
         return False
 
-    def empty_buffer(self):
-        self.__buffer = []
-
-    def all_packets(self):
-        return self.__buffer
-
-    def buffer_length(self):
-        return len(self.__buffer)
-
     def remove_packets(self, packets):
         """Removes the packets from the buffer."""
         for packet in packets:
@@ -259,7 +297,7 @@ class Drone(Entity):
                         + str(packet.identifier)
                     )
 
-    def next_target(self):
+    def next_target(self) -> Point:
         if self.move_routing:
             return self.depot.coords
         elif self.come_back_to_mission:

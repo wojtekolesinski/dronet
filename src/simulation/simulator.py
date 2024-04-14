@@ -142,7 +142,6 @@ class Simulator:
     def __set_random_generators(self):
         if self.seed is not None:
             self.rnd_network = np.random.RandomState(self.seed)
-            self.rnd_routing = np.random.RandomState(self.seed)
             self.rnd_event = np.random.RandomState(self.seed)
 
     def __set_simulation(self):
@@ -157,11 +156,20 @@ class Simulator:
 
         self.depot = Depot(self.depot_coordinates, self.depot_com_range, self)
 
-        self.drones = []
+        self.drones: list[Drone] = []
 
         # drone 0 is the first
         for i in range(self.n_drones):
-            self.drones.append(Drone(i, self.path_manager.path(i), self.depot, self))
+            self.drones.append(
+                Drone(
+                    i,
+                    self.rnd_network.randint(1, 256),
+                    self.network_dispatcher,
+                    self.path_manager.path(i),
+                    self.depot,
+                    self,
+                )
+            )
 
         self.environment.add_drones(self.drones)
         self.environment.add_depot(self.depot)
@@ -266,8 +274,6 @@ class Simulator:
             self.cur_step = cur_step
             # check for new events and remove the expired ones from the environment
             # self.environment.update_events(cur_step)
-            # sense the area and move drones and sense the area
-            self.network_dispatcher.run_medium(cur_step)
 
             # generates events
             # sense the events
@@ -278,6 +284,7 @@ class Simulator:
                 # 2. try routing packets vs other drones or depot
                 # 3. actually move the drone towards next waypoint or depot
 
+                drone.listen()
                 drone.update_packets(cur_step)
                 drone.routing(self.drones, self.depot, cur_step)
                 drone.move(self.time_step_duration)

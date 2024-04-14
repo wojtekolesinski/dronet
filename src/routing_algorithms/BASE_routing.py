@@ -5,12 +5,13 @@ from scipy.stats import norm
 import config
 from entities.packets import ACKPacket, DataPacket, HelloPacket, Packet
 from simulation.metrics import Metrics
+from src.entities.uav_entities import Drone
 from utilities import utilities as util
 
 
 class BASE_routing(metaclass=abc.ABCMeta):
 
-    def __init__(self, drone, simulator):
+    def __init__(self, drone: Drone, simulator):
         """The drone that is doing routing and simulator object."""
 
         self.drone = drone
@@ -18,9 +19,6 @@ class BASE_routing(metaclass=abc.ABCMeta):
         self.hello_messages = {}  # { drone_id : most recent hello packet}
         self.network_disp = simulator.network_dispatcher
         self.simulator = simulator
-
-        if self.simulator.communication_error_type == config.ChannelError.GAUSSIAN:
-            self.buckets_probability = self.__init_guassian()
         self.no_transmission = False
 
     @abc.abstractmethod
@@ -51,20 +49,22 @@ class BASE_routing(metaclass=abc.ABCMeta):
                 self.current_n_transmission = 0
                 self.drone.move_routing = False
 
-    def drone_identification(self, drones, cur_step):
+    def drone_identification(self, drones, cur_step: int):
         """handle drone hello messages to identify neighbors"""
         # if self.drone in drones: drones.remove(self.drone)  # do not send hello to yourself
         if cur_step % config.HELLO_DELAY != 0:  # still not time to communicate
             return
 
         my_hello = HelloPacket(
-            self.drone,
+            self.drone.address,
+            config.BROADCAST_ADDRESS,
             cur_step,
             self.drone.coords,
             self.drone.speed,
             self.drone.next_target(),
         )
 
+        self.network_disp.send(my_hello)
         self.broadcast_message(my_hello, self.drone, drones, cur_step)
 
     def routing(self, depot, drones, cur_step):
@@ -156,31 +156,6 @@ class BASE_routing(metaclass=abc.ABCMeta):
 
         return closest_drones
 
-    def channel_success(self, drones_distance, no_error=False):
-        """
-        Precondition: two drones are close enough to communicate. Return true if the communication
-        goes through, false otherwise.
-        """
-
-        assert drones_distance <= self.drone.communication_range
-
-        if no_error:
-            return True
-
-        if self.simulator.communication_error_type == config.ChannelError.NO_ERROR:
-            return True
-
-        elif self.simulator.communication_error_type == config.ChannelError.UNIFORM:
-            return (
-                self.simulator.rnd_routing.rand()
-                <= self.simulator.drone_communication_success
-            )
-
-        elif self.simulator.communication_error_type == config.ChannelError.GAUSSIAN:
-            return self.simulator.rnd_routing.rand() <= self.gaussian_success_handler(
-                drones_distance
-            )
-
     def broadcast_message(self, packet, src_drone, dst_drones, curr_step):
         """send a message to my neigh drones"""
         for d_drone in dst_drones:
@@ -193,11 +168,6 @@ class BASE_routing(metaclass=abc.ABCMeta):
             packet, src_drone, dst_drone, curr_step + config.LIL_DELTA
         )
 
-    def gaussian_success_handler(self, drones_distance):
-        """get the probability of the drone bucket"""
-        bucket_id = int(drones_distance / self.radius_corona) * self.radius_corona
-        return self.buckets_probability[bucket_id] * config.GUASSIAN_SCALE
-
     def transfer_to_depot(self, depot, cur_step):
         """self.drone is close enough to depot and offloads its buffer to it, restarting the monitoring
         mission from where it left it
@@ -207,26 +177,3 @@ class BASE_routing(metaclass=abc.ABCMeta):
         self.drone.move_routing = False
 
     # --- PRIVATE ---
-    def __init_guassian(self, mu=0, sigma_wrt_range=1.15, bucket_width_wrt_range=0.5):
-
-        # bucket width is 0.5 times the communication radius by default
-        self.radius_corona = int(
-            self.drone.communication_range * bucket_width_wrt_range
-        )
-
-        # sigma is 1.15 times the communication radius by default
-        sigma = self.drone.communication_range * sigma_wrt_range
-
-        max_prob = norm.cdf(mu + self.radius_corona, loc=mu, scale=sigma) - norm.cdf(
-            0, loc=mu, scale=sigma
-        )
-
-        # maps a bucket starter to its probability of gaussian success
-        buckets_probability = {}
-        for bk in range(0, self.drone.communication_range, self.radius_corona):
-            prob_leq = norm.cdf(bk, loc=mu, scale=sigma)
-            prob_leq_plus = norm.cdf(bk + self.radius_corona, loc=mu, scale=sigma)
-            prob = (prob_leq_plus - prob_leq) / max_prob
-            buckets_probability[bk] = prob
-
-        return buckets_probability
