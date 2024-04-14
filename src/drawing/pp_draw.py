@@ -2,6 +2,7 @@ from collections import defaultdict
 
 import config
 from drawing import stddraw
+from entities.event import Event
 from utilities import utilities
 
 
@@ -101,7 +102,7 @@ class PathPlanningDrawer:
             self.save(filename)
         stddraw.clear()
 
-    def draw_event(self, event):
+    def draw_event(self, event: Event):
         coords = event.coords
         stddraw.setPenRadius(0.0055)
         stddraw.setPenColor(c=stddraw.RED)

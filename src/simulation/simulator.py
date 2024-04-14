@@ -10,8 +10,8 @@ from drawing import pp_draw
 from entities.uav_entities import *
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
-from src.utilities.types import Point
 from utilities import utilities
+from utilities.types import Point
 
 """
 This file contains the Simulation class. It allows to explicit all the relevant parameters of the simulation,

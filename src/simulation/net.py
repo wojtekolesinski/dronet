@@ -1,5 +1,5 @@
 import utilities.utilities as util
-from entities.uav_entities import DataPacket
+from entities.packets import DataPacket
 from simulation.metrics import Metrics
 
 

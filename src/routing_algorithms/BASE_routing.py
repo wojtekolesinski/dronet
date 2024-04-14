@@ -3,7 +3,7 @@ import abc
 from scipy.stats import norm
 
 import config
-from entities.uav_entities import ACKPacket, DataPacket, HelloPacket, Packet
+from entities.packets import ACKPacket, DataPacket, HelloPacket, Packet
 from simulation.metrics import Metrics
 from utilities import utilities as util
 
