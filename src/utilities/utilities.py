@@ -290,33 +290,6 @@ def plot_X(X, plt_title, plt_path, window_size=30, is_avg=True):
         plt.clf()
 
 
-""" This class handle the return to depot for
-    the drones, such that they return to the depot in a coordinated fashion
-    currently is based on channel -> in future can also handle cluster head/waypoints
-"""
-
-
-class PathToDepot:
-
-    def __init__(self, x_position, simulator):
-        """for now just a middle channel in the area used by all the drones"""
-        self.x_position = x_position
-        self.simulator = simulator
-
-    def next_target(self, drone_pos):
-        """based on the drone position return the next target:
-        |-> channel position or cluster head position
-        |-> the depot if the drones are already in the channel or have overpass the cluster head
-        """
-        # only channel mode
-        if (
-            abs(drone_pos[0] - self.x_position) < 1
-        ):  # the drone is already on the channel with an error of 1 meter
-            return self.simulator.depot_coordinates
-        else:
-            return self.x_position, drone_pos[1]  # the closest point to the channel
-
-
 def measure_scaler(measure, dom_start, dom_target):
     """Scales the measure value in the start domain [Type, min, max], in the target domain."""
     return (measure - dom_start[1]) / (dom_start[2] - dom_start[1]) * (
