@@ -78,8 +78,8 @@ time_step_duration = 0.150  # float: seconds duration of a step in seconds.
 seed = 10  # int: seed of this simulation.
 
 n_drones = 5  # int: number of drones. # ***
-env_width = 1500  # float: meters, width of environment.
-env_height = 1500  # float:_durationeight of environment.
+env_width = 1500  # int: meters, width of environment.
+env_height = 1500  # int: height of environment.
 
 # events
 event_duration = 1500  # SIM_DURATION  # int: steps, number of time steps that an event lasts  -> to seconds = step * step_duration.
@@ -90,14 +90,14 @@ event_generation_prob = 0.8  # float: probability that the drones feels the even
 
 # drones
 drone_communication_range = 150  # float: meters, communication range of the drones.
-drone_sensing_range = 0  # float: meters, the sensing range of the drones.
-drone_speed = 8  # float: m/s, drone speed.
+drone_sensing_range = 0  # int: meters, the sensing range of the drones.
+drone_speed = 8  # int: m/s, drone speed.
 drone_max_buffer_size = 10000  # int: max number of packets in the buffer of a drone.
 drone_max_energy = 1000000  # int: max energy of a drone.
 
 # depot
-depot_communication_range = 150  # float: meters, communication range of the depot.
-depot_coordinates = (750, 0)  # (float, float): coordinates of the depot.
+depot_communication_range = 150  # int: meters, communication range of the depot.
+depot_coordinates = (750, 0)  # (int, int): coordinates of the depot.
 
 
 # ------------------------------- ROUTING PARAMS. ------------------------------- #
@@ -122,14 +122,16 @@ class ChannelError(Enum):
 
 
 routing_algorithm = RoutingAlgorithm.GEO
-CHANNEL_ERROR_TYPE = ChannelError.GAUSSIAN
+communication_error_type = ChannelError.GAUSSIAN
 
-COMMUNICATION_P_SUCCESS = 1  # float: probability to have success in a communication.
+communication_success_prob: float = (
+    1  # float: probability to have success in a communication.
+)
 GUASSIAN_SCALE = 0.9  # float [0,1]: scale the error probability of the guassian -> success * GUASSIAN_SCALER
 packets_max_ttl = (
     200  # float: threshold in the maximum number of hops. Causes loss of packets.
 )
-RETRANSMISSION_DELAY = 10  # int: how many time steps to wait before transmit again (for k retransmissions). # ---  #delta_k
+retransmission_delay = 10  # int: how many time steps to wait before transmit again (for k retransmissions). # ---  #delta_k
 
 # ------------------------------------------- ROUTING MISC --------------------------------- #
 HELLO_DELAY = 5  # int : how many time steps wait before transmit again an hello message

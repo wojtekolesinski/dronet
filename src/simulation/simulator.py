@@ -10,6 +10,7 @@ from drawing import pp_draw
 from entities.uav_entities import *
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
+from src.utilities.types import Point
 from utilities import utilities
 
 """
@@ -23,30 +24,29 @@ class Simulator:
 
     def __init__(
         self,
-        len_simulation=config.len_simulation,
-        time_step_duration=config.time_step_duration,
-        seed=config.seed,
-        n_drones=config.n_drones,
-        env_width=config.env_width,
-        env_height=config.env_height,
-        drone_com_range=config.drone_communication_range,
-        drone_sen_range=config.drone_sensing_range,
-        drone_speed=config.drone_speed,
-        drone_max_buffer_size=config.drone_max_buffer_size,
-        drone_max_energy=config.drone_max_energy,
-        drone_retransmission_delta=config.RETRANSMISSION_DELAY,
-        drone_communication_success=config.COMMUNICATION_P_SUCCESS,
-        depot_com_range=config.depot_communication_range,
-        depot_coordinates=config.depot_coordinates,
-        event_duration=config.event_duration,
-        event_generation_prob=config.event_generation_prob,
-        event_generation_delay=config.event_generation_delay,
-        packets_max_ttl=config.packets_max_ttl,
-        show_plot=config.show_plot,
+        len_simulation: int = config.len_simulation,
+        time_step_duration: float = config.time_step_duration,
+        seed: int = config.seed,
+        n_drones: int = config.n_drones,
+        env_width: int = config.env_width,
+        env_height: int = config.env_height,
+        drone_com_range: int = config.drone_communication_range,
+        drone_sen_range: int = config.drone_sensing_range,
+        drone_speed: int = config.drone_speed,
+        drone_max_buffer_size: int = config.drone_max_buffer_size,
+        drone_max_energy: int = config.drone_max_energy,
+        retransmission_delay: int = config.retransmission_delay,
+        drone_communication_success_prob: float = config.communication_success_prob,
+        depot_communication_range: int = config.depot_communication_range,
+        depot_coordinates: Point = config.depot_coordinates,
+        event_duration: int = config.event_duration,
+        event_generation_prob: float = config.event_generation_prob,
+        event_generation_delay: int = config.event_generation_delay,
+        packets_max_ttl: int = config.packets_max_ttl,
+        show_plot: bool = config.show_plot,
         routing_algorithm=config.routing_algorithm,
-        communication_error_type=config.CHANNEL_ERROR_TYPE,
+        communication_error_type=config.communication_error_type,
         prob_size_cell_r=config.CELL_PROB_SIZE_R,
-        simulation_name="",
     ):
         self.cur_step = None
         self.drone_com_range = drone_com_range
@@ -54,19 +54,19 @@ class Simulator:
         self.drone_speed = drone_speed
         self.drone_max_buffer_size = drone_max_buffer_size
         self.drone_max_energy = drone_max_energy
-        self.drone_retransmission_delta = drone_retransmission_delta
-        self.drone_communication_success = drone_communication_success
+        self.drone_retransmission_delta = retransmission_delay
+        self.drone_communication_success = drone_communication_success_prob
         self.n_drones = n_drones
         self.env_width = env_width
         self.env_height = env_height
-        self.depot_com_range = depot_com_range
+        self.depot_com_range = depot_communication_range
         self.depot_coordinates = depot_coordinates
         self.len_simulation = len_simulation
         self.time_step_duration = time_step_duration
         self.seed = seed
         self.event_duration = event_duration
         self.event_max_retrasmission = math.ceil(
-            event_duration / drone_retransmission_delta
+            event_duration / retransmission_delay
         )  # 600 esempio
         self.event_generation_prob = event_generation_prob
         self.event_generation_delay = event_generation_delay
