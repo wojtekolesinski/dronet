@@ -27,10 +27,10 @@ def sim_setup(n_drones, seed, algorithm):
         drone_speed=drone_speed,
         drone_max_buffer_size=drone_max_buffer_size,
         drone_max_energy=drone_max_energy,
-        drone_retransmission_delta=drone_retransmission_delta,
-        drone_communication_success=drone_communication_success,
+        retransmission_delay=drone_retransmission_delta,
+        drone_communication_success_prob=drone_communication_success,
         event_generation_delay=event_generation_delay,
-        depot_com_range=depot_com_range,
+        depot_communication_range=depot_com_range,
         depot_coordinates=depot_coordinates,
         event_duration=event_duration,
         event_generation_prob=event_generation_prob,
@@ -39,7 +39,6 @@ def sim_setup(n_drones, seed, algorithm):
         communication_error_type=config.ChannelError.GAUSSIAN,
         show_plot=show_plot,
         # ML parameters
-        simulation_name="",
     )
 
 
