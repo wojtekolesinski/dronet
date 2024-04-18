@@ -1,8 +1,9 @@
 import numpy as np
+from scipy.stats import norm
 
 import config
 import utilities.utilities as util
-from entities.packets import DataPacket, Packet
+from entities.packets import Packet
 from simulation.metrics import Metrics
 from utilities.types import NetAddr, Point
 
@@ -45,10 +46,7 @@ class MediumDispatcher:
         packets_to_send = list()
 
         for packet, packet_pos, comm_range in self.packets:
-            if (
-                packet.destination != address
-                and packet.destination != config.BROADCAST_ADDRESS
-            ):
+            if packet.dst_relay != address and packet.dst != config.BROADCAST_ADDRESS:
                 continue
 
             distance = util.euclidean_distance(pos, packet_pos)
