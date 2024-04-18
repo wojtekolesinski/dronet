@@ -89,7 +89,7 @@ class PathPlanningDrawer:
 
         self.__draw_drone_info(drone, cur_step)
         self.__draw_communication_range(drone)
-        self.__draw_sensing_range(drone)
+        # self.__draw_sensing_range(drone)
         self.__reset_pen()
 
         if config.IS_SHOW_NEXT_TARGET_VEC:
