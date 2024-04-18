@@ -1,108 +1,28 @@
 import numpy as np
 
 import config
-from entities.base import Entity
+from entities.communicating_entity import CommunicatingEntity
+from entities.depot import Depot
 from entities.event import Event
-from entities.packets import DataPacket
+from entities.packets import ACKPacket, DataPacket, HelloPacket, Packet
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
-from simulation.simulator import Simulator
 from utilities import utilities
-from utilities.types import NetAddr, Point
-
-
-# ------------------ Depot ----------------------
-class Depot(Entity):
-    """The depot is an Entity."""
-
-    def __init__(self, coords, communication_range, simulator):
-        super().__init__(id(self), coords)
-        self.communication_range = communication_range
-
-        self.simulator = simulator
-        self.__buffer = list()  # also with duplicated packets
-
-    def all_packets(self):
-        return self.__buffer
-
-    def transfer_notified_packets(self, current_drone, cur_step):
-        """function called when a drone wants to offload packets to the depot"""
-
-        packets_to_offload = current_drone.all_packets()
-        self.__buffer += packets_to_offload
-
-        for pck in packets_to_offload:
-
-            if config.routing_algorithm.name not in "GEO" "RND" "GEOS":
-
-                feedback = 1
-                delivery_delay = cur_step - pck.event_ref.current_time
-
-                for drone in self.simulator.drones:
-                    drone.routing_algorithm.feedback(
-                        current_drone,
-                        pck.event_ref.identifier,
-                        delivery_delay,
-                        feedback,
-                    )
-            # print(f"DEPOT -> Drone {current_drone.identifier} packet: {pck.event_ref} total packets in sim: {len(Metrics.instance().drones_packets_to_depot)}")
-
-            # add metrics: all the packets notified to the depot
-            Metrics.instance().drones_packets_to_depot.add((pck, cur_step))
-            Metrics.instance().drones_packets_to_depot_list.append((pck, cur_step))
-            pck.time_delivery = cur_step
-
-
-# ------------------ Drone ----------------------
-class CommunicatingEntity(Entity):
-
-    def __init__(
-        self,
-        identifier: int,
-        coords: Point,
-        address: NetAddr,
-        network: MediumDispatcher,
-        sensing_range: int,
-        communication_range: int,
-        buffer_size: int,
-    ):
-        super().__init__(identifier, coords)
-        self.address = address
-        self.network = network
-        self.sensing_range = sensing_range
-        self.communication_range = communication_range
-        self.buffer_size = buffer_size
-        self.__buffer = []  # contains the packets
-        self.no_transmission = False
-
-    def listen(self):
-        packets = self.network.listen(
-            self.address, self.coords, self.communication_range
-        )
-        self.__buffer.extend(packets)
-
-    def empty_buffer(self):
-        self.__buffer = []
-
-    def all_packets(self):
-        return self.__buffer
-
-    def buffer_length(self):
-        return len(self.__buffer)
-
-
+from utilities.types import NetAddr, Path, Point
 
 
 class Drone(CommunicatingEntity):
 
+    last_mission_coords: Point
+
     def __init__(
         self,
         identifier: int,
         address: NetAddr,
         network: MediumDispatcher,
-        path: list,
+        path: Path,
         depot: Depot,
-        simulator: Simulator,
+        simulator,
     ):
         super().__init__(
             identifier,
