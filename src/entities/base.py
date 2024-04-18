@@ -4,6 +4,9 @@ from utilities.types import Point
 class Entity:
     """An entity in the environment, e.g. Drone, Event, Packet. It extends SimulatedEntity."""
 
+    identifier: int
+    coords: Point
+
     def __init__(self, identifier: int, coords: Point):
         self.identifier = identifier  # the id of the entity
         self.coords = coords  # the coordinates of the entity on the map
