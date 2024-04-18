@@ -9,6 +9,13 @@ from utilities.types import NetAddr, Point
 class Packet(Entity):
     """A packet is an object created out of an event monitored on the aoi."""
 
+    src: NetAddr
+    dst: NetAddr
+    src_relay: NetAddr
+    dst_relay: NetAddr
+    timestamp: int
+    event_ref: Event | None = None
+
     def __init__(
         self,
         source: NetAddr,
@@ -27,8 +34,10 @@ class Packet(Entity):
         # the coordinates are those of the event
         super().__init__(id(self), event_ref_crafted.coords)
 
-        self.source = source
-        self.destination = destination
+        self.src = source
+        self.src_relay = source
+        self.dst = destination
+        self.dst_relay = destination
         self.timestamp = timestamp
         self.event_ref = event_ref_crafted
         self.__TTL = -1  # TTL is the number of hops that the packet crossed
