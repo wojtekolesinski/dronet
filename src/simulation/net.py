@@ -16,17 +16,6 @@ class MediumDispatcher:
         if config.communication_error_type == config.ChannelError.GAUSSIAN:
             self.buckets_probability = self.__init_guassian()
 
-    def send_packet_to_medium(
-        self, packet: Packet, src_drone, dst_drone, to_send_ts: int
-    ):
-        if isinstance(packet, DataPacket):
-            # self.metric_class.all_data_packets_in_simulation += 1
-            pass
-        else:
-            self.metric_class.all_control_packets_in_simulation += 1
-
-        # self.packets.append((packet, src_drone, dst_drone, to_send_ts))
-
     def send(self, packet: Packet, pos: Point, communication_range: int):
         self.packets.append((packet, pos, communication_range))
 
@@ -71,49 +60,6 @@ class MediumDispatcher:
 
             packets_to_send.append(packet)
         return packets_to_send
-
-    def run_medium(self, current_ts: int):
-        to_drop_indices = []
-        original_self_packets = self.packets[:]
-        self.packets = []
-
-        for i in range(len(original_self_packets)):
-            packet, src_drone, dst_drone, to_send_ts = original_self_packets[i]
-
-            # not time to send this packet
-            if to_send_ts != current_ts:
-                continue
-
-            to_drop_indices.append(i)
-
-            # cannot send packets to self
-            if src_drone.identifier == dst_drone.identifier:
-                continue
-
-            drones_distance = util.euclidean_distance(
-                src_drone.coords, dst_drone.coords
-            )
-
-            # check if drones are in range
-            if drones_distance > min(
-                src_drone.communication_range, dst_drone.communication_range
-            ):
-                continue
-
-            if dst_drone.routing_algorithm.channel_success(
-                drones_distance, no_error=True
-            ):
-                # reception of a packet
-                dst_drone.routing_algorithm.drone_reception(
-                    src_drone, packet, current_ts
-                )
-
-        original_self_packets = [
-            original_self_packets[i]
-            for i in range(len(original_self_packets))
-            if i not in to_drop_indices
-        ]
-        self.packets = original_self_packets + self.packets
 
     def gaussian_success_handler(self, drones_distance):
         """get the probability of the drone bucket"""
