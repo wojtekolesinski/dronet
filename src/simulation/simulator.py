@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 import config
 from drawing import pp_draw
+from entities.environment import Environment
 from entities.uav_entities import *
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
@@ -154,7 +155,12 @@ class Simulator:
         )
         self.environment = Environment(self.env_width, self.env_height)
 
-        self.depot = Depot(self.depot_coordinates, self.depot_com_range, self)
+        self.depot = Depot(
+            config.DEPOT_ADDRESS,
+            config.depot_coordinates,
+            self.network_dispatcher,
+            self,
+        )
 
         self.drones: list[Drone] = []
 
@@ -163,7 +169,7 @@ class Simulator:
             self.drones.append(
                 Drone(
                     i,
-                    self.rnd_network.randint(1, 256),
+                    config.DEPOT_ADDRESS + 1 + i,
                     self.network_dispatcher,
                     self.path_manager.path(i),
                     self.depot,
@@ -272,11 +278,6 @@ class Simulator:
         for cur_step in tqdm(range(self.len_simulation)):
 
             self.cur_step = cur_step
-            # check for new events and remove the expired ones from the environment
-            # self.environment.update_events(cur_step)
-
-            # generates events
-            # sense the events
             self.handle_events_generation(cur_step)
 
             for drone in self.drones:
@@ -284,11 +285,15 @@ class Simulator:
                 # 2. try routing packets vs other drones or depot
                 # 3. actually move the drone towards next waypoint or depot
 
+                # TODO: the drone should listen to the packets first,
+                # then handle each of them (it can be either consumed by the routing agent, or passed for relay)
                 drone.listen()
                 drone.update_packets(cur_step)
-                drone.routing(self.drones, self.depot, cur_step)
+                drone.routing(cur_step)
                 drone.move(self.time_step_duration)
+                # TODO: send packets from output buffer here
 
+            self.network_dispatcher.packets = []
             # in case we need probability map
             if config.ENABLE_PROBABILITIES:
                 self.increase_meetings_probs(self.drones, cur_step)
