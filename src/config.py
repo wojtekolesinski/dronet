@@ -3,7 +3,7 @@ from enum import Enum
 from routing_algorithms.georouting import GeoRouting
 from routing_algorithms.q_learning_routing import QLearningRouting
 from routing_algorithms.random_routing import RandomRouting
-from src.utilities.types import NetAddr
+from utilities.types import NetAddr
 
 """
 This file contains all the constants and parameters of the simulator.
@@ -145,7 +145,8 @@ OLD_HELLO_PACKET = 50
 ROOT_EVALUATION_DATA = "data/evaluation_tests/"
 
 NN_MODEL_PATH = "data/nnmodels/"
-BROADCAST_ADDRESS: NetAddr = 0
+BROADCAST_ADDRESS: NetAddr = 255
+DEPOT_ADDRESS: NetAddr = 1
 
 # --------------- new cell probabilities -------------- #
 CELL_PROB_SIZE_R = 1.875  # the percentage of cell size with respect to drone com range
