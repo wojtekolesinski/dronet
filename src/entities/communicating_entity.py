@@ -32,7 +32,6 @@ class CommunicatingEntity(Entity):
         self.buffer_size = buffer_size
         self.buffer: list[Packet] = []
         self.output_buffer: list[Packet] = []
-        self.no_transmission = False
         self.time = 0
 
     def listen(self):

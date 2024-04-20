@@ -18,16 +18,12 @@ class BASE_routing(metaclass=abc.ABCMeta):
         self.hello_messages = {}  # { drone_id : most recent hello packet}
         self.network_disp: MediumDispatcher = simulator.network_dispatcher
         self.simulator = simulator
-        self.no_transmission = False
 
     @abc.abstractmethod
     def relay_selection(
         self, geo_neighbors: list[HelloPacket], packet: Packet
     ) -> HelloPacket:
         pass
-
-    def routing_close(self):
-        self.no_transmission = False
 
     def handle_hello(self, packet: HelloPacket):
         src_id = packet.src
@@ -57,18 +53,10 @@ class BASE_routing(metaclass=abc.ABCMeta):
 
         self.send_packets(cur_step)
 
-        # TODO: what does this do? is it needed?
-        # close this routing pass
-        self.routing_close()
 
     def send_packets(self, cur_step):
         """procedure 3 -> choice next hop and try to send it the data packet"""
 
-        # FLOW 0
-        if self.no_transmission or self.drone.buffer_length() == 0:
-            return
-
-        # FLOW 1
         if (
             util.euclidean_distance(self.simulator.depot.coords, self.drone.coords)
             <= self.simulator.depot_com_range
