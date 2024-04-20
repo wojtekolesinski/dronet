@@ -48,7 +48,6 @@ class Drone(CommunicatingEntity):
         # used later to check if there is an event that is about to expire
         self.tightest_event_deadline = None
         self.current_waypoint = 0
-        self.distance_from_depot = 0
         self.move_to_depot = False
 
         # setup drone routing algorithm
@@ -152,9 +151,6 @@ class Drone(CommunicatingEntity):
 
     def routing(self, cur_step):
         """do the routing"""
-        self.distance_from_depot = utilities.euclidean_distance(
-            self.depot.coords, self.coords
-        )
         self.routing_algorithm.routing(cur_step)
 
     def move(self, time):

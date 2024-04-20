@@ -56,9 +56,6 @@ class Packet(Entity):
         # if the packet was sent with move routing or not
         self.is_move_packet = None
 
-    def distance_from_depot(self):
-        return utilities.euclidean_distance(config.depot_coordinates, self.coords)
-
     def age_of_packet(self, cur_step: int):
         return cur_step - self.timestamp
 
