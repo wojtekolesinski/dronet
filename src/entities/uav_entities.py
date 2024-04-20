@@ -146,12 +146,6 @@ class Drone(CommunicatingEntity):
         else:  # store the events that are missing due to movement routing
             Metrics.instance().events_not_listened.add(ev)
 
-    def accept_packets(self, packets):
-        """Self drone adds packets of another drone, when it feels it passing by."""
-
-        for packet in packets:
-            # add if not notified yet, else don't, proprietary drone will delete all packets, but it is ok
-            # because they have already been notified by someone already
 
             if not self.is_known_packet(packet):
                 self.buffer.append(packet)
@@ -192,13 +186,6 @@ class Drone(CommunicatingEntity):
 
         # set the last move routing
         self.last_move_routing = self.move_to_depot
-
-    def is_known_packet(self, packet: DataPacket):
-        """Returns True if drone has already a similar packet (i.e., referred to the same event)."""
-        for pk in self.buffer:
-            if pk.event_ref == packet.event_ref:
-                return True
-        return False
 
     def next_target(self) -> Point:
         if self.move_to_depot:
