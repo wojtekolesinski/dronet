@@ -3,6 +3,7 @@ from collections import defaultdict
 import config
 from drawing import stddraw
 from entities.event import Event
+from entities.uav_entities import Drone
 from utilities import utilities
 
 
@@ -78,7 +79,7 @@ class PathPlanningDrawer:
         stddraw.setPenColor(c=stddraw.BLACK)
         stddraw.setPenRadius(0.0055)
 
-    def draw_drone(self, drone, cur_step):
+    def draw_drone(self, drone: Drone, cur_step):
         coords = drone.coords
         if drone.buffer_length() > 0:  # change color when find a packet
             stddraw.setPenColor(c=stddraw.GREEN)
@@ -175,7 +176,7 @@ class PathPlanningDrawer:
         stddraw.line(drone_coo[0], drone_coo[1], target[0], target[1])
         self.__reset_pen()
 
-    def __draw_drone_info(self, drone, cur_step):
+    def __draw_drone_info(self, drone: Drone, cur_step):
         stddraw.setPenRadius(0.0125)
         stddraw.setPenColor(c=stddraw.BLACK)
         # life time and speed
@@ -193,7 +194,7 @@ class PathPlanningDrawer:
             stddraw.text(
                 drone.coords[0],
                 drone.coords[1] - (drone.communication_range / 2.0),
-                "retr: " + str(drone.routing_algorithm.current_n_transmission),
+                "retr: " + str(drone.router.retransmission_count),
             )
 
         # If the buffer is empty, do not show the retransmission counters since they are not updated
