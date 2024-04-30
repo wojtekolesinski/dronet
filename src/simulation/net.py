@@ -18,6 +18,8 @@ class MediumDispatcher:
             self.buckets_probability = self.__init_guassian()
 
     def send(self, packet: Packet, pos: Point, communication_range: int):
+        if packet.src == packet.dst_relay:
+            return
         self.packets.append((packet, pos, communication_range))
 
     def channel_success(self, drones_distance, no_error=False) -> bool:
@@ -46,7 +48,12 @@ class MediumDispatcher:
         packets_to_send = list()
 
         for packet, packet_pos, comm_range in self.packets:
-            if packet.dst_relay != address and packet.dst != config.BROADCAST_ADDRESS:
+            if packet.src == address:
+                continue
+            if (
+                packet.dst_relay != address
+                and packet.dst_relay != config.BROADCAST_ADDRESS
+            ):
                 continue
 
             distance = util.euclidean_distance(pos, packet_pos)

@@ -1,40 +1,72 @@
 import abc
+import dataclasses
 
 import config
-from entities.packets import ACKPacket, DataPacket, HelloPacket, Packet
-from entities.uav_entities import Drone
+from entities.communicating_entity import CommunicatingEntity
+from entities.packets import DataPacket, HelloPacket, Packet
 from simulation.metrics import Metrics
-from simulation.net import MediumDispatcher
-from utilities import utilities as util
+from utilities.types import NetAddr, Point
+
+
+@dataclasses.dataclass(frozen=True)
+class NeighbourNode:
+    address: NetAddr
+    timestamp: int
+    coords: Point
+    next_target: Point
+    speed: int
+
+    def __eq__(self, value: object, /) -> bool:
+        if not isinstance(value, NeighbourNode):
+            return False
+        return self.address == value.address
+
+    @staticmethod
+    def from_hello_packet(packet: HelloPacket):
+        return NeighbourNode(
+            packet.src,
+            packet.timestamp,
+            packet.cur_pos,
+            packet.next_target,
+            packet.speed,
+        )
 
 
 class BASE_routing(metaclass=abc.ABCMeta):
 
-    def __init__(self, drone: Drone, simulator):
+    def __init__(self, drone: CommunicatingEntity):
         """The drone that is doing routing and simulator object."""
-
         self.drone = drone
-        self.current_n_transmission = 0
-        self.hello_messages = {}  # { drone_id : most recent hello packet}
-        self.network_disp: MediumDispatcher = simulator.network_dispatcher
-        self.simulator = simulator
+        self.retransmission_count = 0
+        # TODO: this should be a dict, as currently updating the set is broken
+        self.neighbours: dict[NetAddr, NeighbourNode] = dict()
 
     @abc.abstractmethod
-    def relay_selection(
-        self, geo_neighbors: list[HelloPacket], packet: Packet
-    ) -> HelloPacket:
+    def relay_selection(self, packet: DataPacket) -> NeighbourNode:
         pass
 
-    def handle_hello(self, packet: HelloPacket):
-        src_id = packet.src
-        self.hello_messages[src_id] = packet
+    def filter_neighbours_for_packet(
+        self, packet: DataPacket
+    ) -> dict[NetAddr, NeighbourNode]:
+        # filter out the original sender of the packet, and the last relay node
+        # neighbours = set(
+        #     [
+        #         n
+        #         for n in self.neighbours
+        #         if n.address not in (packet.src, packet.src_relay)
+        #     ]
+        # )
+        return self.neighbours
 
-    def drone_identification(self, cur_step: int):
+    def handle_hello(self, packet: HelloPacket):
+        self.neighbours[packet.src] = NeighbourNode.from_hello_packet(packet)
+
+    def drone_identification(self, cur_step: int) -> HelloPacket | None:
         """handle drone hello messages to identify neighbors"""
         if cur_step % config.HELLO_DELAY != 0:  # still not time to communicate
             return
 
-        my_hello = HelloPacket(
+        return HelloPacket(
             self.drone.address,
             config.BROADCAST_ADDRESS,
             cur_step,
@@ -43,66 +75,34 @@ class BASE_routing(metaclass=abc.ABCMeta):
             self.drone.next_target(),
         )
 
-        self.network_disp.send(
-            my_hello, self.drone.coords, self.drone.communication_range
-        )
+    def update_neighbours(self, cur_step: int):
+        """delete neighbour nodes that didn't send HelloPackets in a while"""
+        to_delete = []
+        for neighbour in self.neighbours.values():
+            if neighbour.timestamp + config.OLD_HELLO_PACKET < cur_step:
+                to_delete.append(neighbour.address)
+        for n in to_delete:
+            del self.neighbours[n]
+            print(f"deleting neighbour: {n}")
 
-    def routing(self, cur_step: int):
-        # set up this routing pass
-        self.drone_identification(cur_step)
+    def routing_control(self, cur_step: int) -> list[Packet]:
+        self.update_neighbours(cur_step)
+        packets = []
+        if hello_packet := self.drone_identification(cur_step):
+            packets.append(hello_packet)
+        return packets
 
-        self.send_packets(cur_step)
-
-
-    def send_packets(self, cur_step):
-        """procedure 3 -> choice next hop and try to send it the data packet"""
-
-        if (
-            util.euclidean_distance(self.simulator.depot.coords, self.drone.coords)
-            <= self.simulator.depot_com_range
-        ):
-            # add error in case
-            self.transfer_to_depot()
-            self.drone.move_to_depot = False
-            self.current_n_transmission = 0
+    def route_packet(self, packet: DataPacket) -> DataPacket:
+        Metrics.instance().mean_numbers_of_possible_relays.append(len(self.neighbours))
+        best_neighbor = self.relay_selection(packet)
+        if best_neighbor is None:
+            print("Cannot find a neighbour")
             return
 
-        if cur_step % self.simulator.drone_retransmission_delta == 0:
+        packet.dst_relay = best_neighbor.address
+        packet.src_relay = self.drone.address
+        self.retransmission_count += 1
+        return packet
 
-            # TODO: the packets needs to have a relay address and a final address,
-            # if the final address doesn't match the current one, the packet needs to be relayed
-            opt_neighbors = []
-            for hello_packet in self.hello_messages.values():
-                # check if packet is too old
-                if hello_packet.timestamp < cur_step - config.OLD_HELLO_PACKET:
-                    continue
-                opt_neighbors.append(hello_packet)
-
-            if len(opt_neighbors) == 0:
-                return
-
-            # send packets
-            for pkd in self.drone.all_packets():
-                Metrics.instance().mean_numbers_of_possible_relays.append(
-                    len(opt_neighbors)
-                )
-                # compute score
-                best_neighbor = self.relay_selection(opt_neighbors, pkd)
-                if best_neighbor is not None:
-                    pkd.dst_relay = best_neighbor.src
-                    self.network_disp.send(
-                        pkd, self.drone.coords, self.drone.communication_range
-                    )
-
-                self.current_n_transmission += 1
-
-    def transfer_to_depot(self):
-        """self.drone is close enough to depot and offloads its buffer to it, restarting the monitoring
-        mission from where it left it
-        """
-        for packet in self.drone.output_buffer:
-            self.network_disp.send(
-                packet, self.drone.coords, self.drone.communication_range
-            )
-        self.drone.empty_buffer()
-        self.drone.move_to_depot = False
+    def has_neighbours(self) -> bool:
+        return len(self.neighbours) > 0

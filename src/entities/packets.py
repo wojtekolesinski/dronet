@@ -111,12 +111,14 @@ class Packet(Entity):
 class DataPacket(Packet):
     """Basically a Packet"""
 
+    event_ref: Event
+
     def __init__(
         self,
         source: NetAddr,
         destination: NetAddr,
         timestamp: int,
-        event_ref: Event | None = None,
+        event_ref: Event,
     ):
         super().__init__(source, destination, timestamp, event_ref)
 

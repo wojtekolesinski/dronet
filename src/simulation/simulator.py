@@ -173,7 +173,6 @@ class Simulator:
                     self.network_dispatcher,
                     self.path_manager.path(i),
                     self.depot,
-                    self,
                 )
             )
 
@@ -204,12 +203,12 @@ class Simulator:
 
     def __plot(self, cur_step):
         """plot the simulation"""
-        if cur_step % config.SKIP_SIM_STEP != 0:
-            return
+        # if cur_step % config.SKIP_SIM_STEP != 0:
+        # return
 
         # delay draw
-        if config.WAIT_SIM_STEP > 0:
-            time.sleep(config.WAIT_SIM_STEP)
+        # if config.WAIT_SIM_STEP > 0:
+        #     time.sleep(config.WAIT_SIM_STEP)
 
         # drones plot
         for drone in self.drones:
@@ -265,9 +264,13 @@ class Simulator:
         index = self.event_generator.handle_events_generation(
             cur_step, len(self.drones)
         )
-        if index:
+        if index is not None:
             drone = self.drones[index]
             drone.feel_event(cur_step)
+
+    def apply_for_each_drone(self, method, *args):
+        for drone in self.drones:
+            method(drone, *args)
 
     def run(self):
         """
@@ -275,25 +278,37 @@ class Simulator:
         @return: None
         """
 
-        for cur_step in tqdm(range(self.len_simulation)):
+        for cur_step in tqdm(range(self.len_simulation), disable=True):
 
             self.cur_step = cur_step
             self.handle_events_generation(cur_step)
 
-            for drone in self.drones:
-                # 1. update expired packets on drone buffers
-                # 2. try routing packets vs other drones or depot
-                # 3. actually move the drone towards next waypoint or depot
-
-                # TODO: the drone should listen to the packets first,
-                # then handle each of them (it can be either consumed by the routing agent, or passed for relay)
-                drone.listen()
-                drone.update_packets(cur_step)
-                drone.routing(cur_step)
-                drone.move(self.time_step_duration)
-                # TODO: send packets from output buffer here
-
+            self.apply_for_each_drone(Drone.set_time, cur_step)
+            self.depot.time = cur_step
+            self.apply_for_each_drone(Drone.listen)
+            self.depot.listen()
             self.network_dispatcher.packets = []
+            self.apply_for_each_drone(Drone.update_packets)
+            self.apply_for_each_drone(Drone.routing)
+            self.depot.routing()
+            self.apply_for_each_drone(Drone.send_packets)
+            self.depot.send_packets()
+            # self.apply_for_each_drone(Drone.move, self.time_step_duration)
+            time.sleep(0.1)
+
+            # for drone in self.drones:
+            #     # 1. update expired packets on drone buffers
+            #     # 2. try routing packets vs other drones or depot
+            #     # 3. actually move the drone towards next waypoint or depot
+            #
+            #     drone.set_time(cur_step)
+            #     drone.listen()
+            #     drone.update_packets()
+            #     drone.routing()
+            #     drone.send_packets()
+            #     drone.move(self.time_step_duration)
+            #     # TODO: send packets from output buffer here
+
             # in case we need probability map
             if config.ENABLE_PROBABILITIES:
                 self.increase_meetings_probs(self.drones, cur_step)

@@ -1,5 +1,6 @@
 import abc
 
+import config
 from entities.base import Entity
 from entities.packets import ACKPacket, Packet
 from simulation.net import MediumDispatcher
@@ -23,6 +24,7 @@ class CommunicatingEntity(Entity):
         sensing_range: int,
         communication_range: int,
         buffer_size: int,
+        speed: int,
     ):
         super().__init__(identifier, coords)
         self.address = address
@@ -33,6 +35,7 @@ class CommunicatingEntity(Entity):
         self.buffer: list[Packet] = []
         self.output_buffer: list[Packet] = []
         self.time = 0
+        self.speed = speed
 
     def listen(self):
         packets = self.network.listen(
@@ -45,6 +48,10 @@ class CommunicatingEntity(Entity):
     def consume_packet(self, packet: Packet):
         pass
 
+    @abc.abstractmethod
+    def next_target(self) -> Point:
+        pass
+
     def acknowledge_packet(self, packet: Packet):
         self.output_buffer.append(
             ACKPacket(self.address, packet.src_relay, self.time, packet.identifier)
@@ -54,10 +61,10 @@ class CommunicatingEntity(Entity):
         self.output_buffer = []
 
     def all_packets(self):
-        return self.output_buffer
+        return self.buffer
 
     def buffer_length(self):
-        return len(self.output_buffer)
+        return len(self.buffer)
 
     def is_full(self):
         return self.buffer_length() == self.buffer_size
@@ -65,6 +72,7 @@ class CommunicatingEntity(Entity):
     def send_packets(self):
         for packet in self.output_buffer:
             self.network.send(packet, self.coords, self.communication_range)
+        self.empty_buffer()
 
     def remove_packets(self, packet_ids: list[int]):
         """Removes the packets from the buffer."""

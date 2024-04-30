@@ -22,7 +22,6 @@ class Drone(CommunicatingEntity):
         network: MediumDispatcher,
         path: Path,
         depot: Depot,
-        simulator,
     ):
         super().__init__(
             identifier,
@@ -32,13 +31,12 @@ class Drone(CommunicatingEntity):
             config.drone_sensing_range,
             config.drone_communication_range,
             config.drone_max_buffer_size,
+            config.drone_speed,
         )
 
         # TODO: cleanup the parameters
-        self.simulator = simulator
         self.depot = depot
         self.path: Path = path
-        self.speed = config.drone_speed
         self.residual_energy = config.drone_max_energy
         # if i'm coming back to my applicative mission
         self.come_back_to_mission = False
@@ -51,11 +49,13 @@ class Drone(CommunicatingEntity):
         self.move_to_depot = False
 
         # setup drone routing algorithm
-        self.routing_algorithm = config.routing_algorithm.value(self, self.simulator)
+        self.router = config.routing_algorithm.value(self)
 
     def consume_packet(self, packet: Packet):
+        # TODO: the drone should not acknowledge all of the incoming data packets,
+        # but it should relay these packets, if it is not the destination
         if isinstance(packet, HelloPacket):
-            self.routing_algorithm.handle_hello(packet)
+            self.router.handle_hello(packet)
 
         elif isinstance(packet, DataPacket):
             self.acknowledge_packet(packet)
@@ -64,43 +64,39 @@ class Drone(CommunicatingEntity):
         elif isinstance(packet, ACKPacket):
             self.remove_packets([packet.acked_packet_id])
             if self.buffer_length() == 0:
-                self.routing_algorithm.current_n_transmission = 0
+                self.router.retransmission_count = 0
                 self.move_to_depot = False
 
-    def update_packets(self, cur_step):
+    def update_packets(self):
         """
         Removes the expired packets from the buffer
 
         @param cur_step: Integer representing the current time step
         @return:
         """
-        to_remove_packets = 0
-        tmp_buffer = []
         self.tightest_event_deadline = np.nan
-
+        to_drop = []
         for pck in self.buffer:
-            if not pck.is_expired(cur_step):
-                tmp_buffer.append(pck)  # append again only if it is not expired
+            if not pck.is_expired(self.time):
                 self.tightest_event_deadline = np.nanmin(
                     [self.tightest_event_deadline, pck.event_ref.deadline]
                 )
                 continue
 
-            to_remove_packets += 1
-
+            to_drop.append(pck.identifier)
+            raise Exception()
             if config.routing_algorithm.name not in "GEO" "RND" "GEOS":
-
                 feedback = -1
                 current_drone = self
 
-                for drone in self.simulator.drones:
-                    drone.routing_algorithm.feedback(
-                        current_drone,
-                        pck.event_ref.identifier,
-                        config.event_duration,
-                        feedback,
-                    )
-        self.buffer = tmp_buffer
+                # for drone in self.simulator.drones:
+                #     drone.routing_algorithm.feedback(
+                #         current_drone,
+                #         pck.event_ref.identifier,
+                #         config.event_duration,
+                #         feedback,
+                #     )
+        self.remove_packets(to_drop)
 
         if self.buffer_length() == 0:
             self.move_to_depot = False
@@ -136,24 +132,33 @@ class Drone(CommunicatingEntity):
         ev = Event(self.coords, cur_step)  # the event
         pk = DataPacket(self.address, self.depot.address, cur_step, ev)
         if not self.move_to_depot and not self.come_back_to_mission:
-            # TODO: unify buffer use
-            # proposed solution:
-            # buffer contains packets, that need to be handled, or routed
-            # output buffer contains packets that are supposed to be sent at the end of this second
             self.buffer.append(pk)
+            print(f"NEW PACKET WITH ID {pk.identifier}")
             Metrics.instance().all_data_packets_in_simulation += 1
         else:  # store the events that are missing due to movement routing
+            print("EVENT NOT LISTENED")
             Metrics.instance().events_not_listened.add(ev)
 
+    def set_time(self, timestamp: int):
+        self.time = timestamp
 
-            if not self.is_known_packet(packet):
-                self.buffer.append(packet)
-
-    def routing(self, cur_step):
+    def routing(self):
         """do the routing"""
-        self.routing_algorithm.routing(cur_step)
+        packets = self.router.routing_control(self.time)
+        self.output_buffer.extend(packets)
 
-    def move(self, time):
+        # TODO: differantiate between new packets and packets to be retransmitted
+        if self.time % config.retransmission_delay != 0:
+            return
+
+        routed_packets = []
+        if self.router.has_neighbours():
+            for packet in self.all_packets():
+                if p := self.router.route_packet(packet):
+                    routed_packets.append(p)
+        self.output_buffer.extend(routed_packets)
+
+    def move(self, time: int):
         """Move the drone to the next point if self.move_routing is false, else it moves towards the depot.
 
         time -> time_step_duration (how much time between two simulation frame)

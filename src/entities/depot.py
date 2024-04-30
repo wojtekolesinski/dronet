@@ -1,8 +1,13 @@
+import logging
+
 import config
 from entities.communicating_entity import CommunicatingEntity
+from entities.packets import DataPacket, Packet
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
 from utilities.types import NetAddr, Point
+
+logger = logging.getLogger(__name__)
 
 
 class Depot(CommunicatingEntity):
@@ -19,9 +24,27 @@ class Depot(CommunicatingEntity):
             -1,
             config.depot_communication_range,
             10_000,
+            0,
         )
 
         self.simulator = simulator
+        self.router = config.routing_algorithm.value(self)
+
+    def consume_packet(self, packet: Packet):
+        if isinstance(packet, DataPacket):
+            self.acknowledge_packet(packet)
+            self.buffer.append(packet)
+            logger.debug(
+                f"Got packet with id {packet.identifier} from drone {packet.src}"
+            )
+
+    def next_target(self) -> Point:
+        return self.coords
+
+    def routing(self):
+        """do the routing"""
+        packets = self.router.routing_control(self.time)
+        self.output_buffer.extend(packets)
 
     def transfer_notified_packets(self, current_drone, cur_step):
         """function called when a drone wants to offload packets to the depot"""
