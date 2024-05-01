@@ -34,6 +34,7 @@ class CommunicatingEntity(Entity):
         self.buffer_size = buffer_size
         self.buffer: list[Packet] = []
         self.output_buffer: list[Packet] = []
+        self.retransmission_buffer: set[Packet] = set()
         self.time = 0
         self.speed = speed
 
@@ -52,16 +53,38 @@ class CommunicatingEntity(Entity):
     def next_target(self) -> Point:
         pass
 
+    @abc.abstractmethod
+    def routing(self):
+        pass
+
     def acknowledge_packet(self, packet: Packet):
-        self.output_buffer.append(
-            ACKPacket(self.address, packet.src_relay, self.time, packet.identifier)
-        )
+        ack_packet = ACKPacket(self.address, packet.src, self.time, packet.identifier)
+        ack_packet.event_ref = packet.event_ref
+        ack_packet.dst_relay = packet.src_relay
+        self.output_buffer.append(ack_packet)
+
+    def set_time(self, timestamp: int):
+        self.time = timestamp
 
     def empty_buffer(self):
+        """empty output buffer and remove packets from retransmission_buffer, that were routed successfully"""
+        for packet in self.output_buffer:
+            if packet in self.retransmission_buffer:
+                self.retransmission_buffer.remove(packet)
         self.output_buffer = []
 
     def all_packets(self):
-        return self.buffer
+        """return packets, that should be routed in this moment.
+        This includes:
+        - packets from buffer, that were generated in this moment.
+        - packets from buffer, that should be retransmitted
+        - all packets from retransmission_buffer"""
+        packets = [*self.retransmission_buffer]
+        for packet in self.buffer:
+            if (self.time - packet.timestamp) % config.retransmission_delay == 0:
+                packets.append(packet)
+
+        return packets
 
     def buffer_length(self):
         return len(self.buffer)

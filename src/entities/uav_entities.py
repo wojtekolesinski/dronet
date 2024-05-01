@@ -56,6 +56,13 @@ class Drone(CommunicatingEntity):
         # but it should relay these packets, if it is not the destination
         if isinstance(packet, HelloPacket):
             self.router.handle_hello(packet)
+            return
+
+        if packet.dst != self.address:
+            self.retransmission_buffer.add(packet)
+            # if len(self.retransmission_buffer) > 1:
+            # print(self.retransmission_buffer)
+            return
 
         elif isinstance(packet, DataPacket):
             self.acknowledge_packet(packet)
@@ -84,7 +91,7 @@ class Drone(CommunicatingEntity):
                 continue
 
             to_drop.append(pck.identifier)
-            raise Exception()
+            # raise Exception()
             if config.routing_algorithm.name not in "GEO" "RND" "GEOS":
                 feedback = -1
                 current_drone = self
@@ -139,17 +146,10 @@ class Drone(CommunicatingEntity):
             print("EVENT NOT LISTENED")
             Metrics.instance().events_not_listened.add(ev)
 
-    def set_time(self, timestamp: int):
-        self.time = timestamp
-
     def routing(self):
         """do the routing"""
         packets = self.router.routing_control(self.time)
         self.output_buffer.extend(packets)
-
-        # TODO: differantiate between new packets and packets to be retransmitted
-        if self.time % config.retransmission_delay != 0:
-            return
 
         routed_packets = []
         if self.router.has_neighbours():
@@ -159,7 +159,7 @@ class Drone(CommunicatingEntity):
         self.output_buffer.extend(routed_packets)
 
     def move(self, time: int):
-        """Move the drone to the next point if self.move_routing is false, else it moves towards the depot.
+        """Move the drone to the next point if self.move_to_depot is false, else it moves towards the depot.
 
         time -> time_step_duration (how much time between two simulation frame)
         """
@@ -174,6 +174,7 @@ class Drone(CommunicatingEntity):
                 not self.last_move_routing
             ):  # this is the first time that we are doing move-routing
                 self.last_mission_coords = self.coords
+                raise Exception()
 
             self.__move_to_depot(time)
         else:

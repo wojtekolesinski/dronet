@@ -31,8 +31,6 @@ class Simulator:
         n_drones: int = config.n_drones,
         env_width: int = config.env_width,
         env_height: int = config.env_height,
-        drone_com_range: int = config.drone_communication_range,
-        drone_sen_range: int = config.drone_sensing_range,
         drone_speed: int = config.drone_speed,
         drone_max_buffer_size: int = config.drone_max_buffer_size,
         drone_max_energy: int = config.drone_max_energy,
@@ -49,9 +47,6 @@ class Simulator:
         communication_error_type=config.communication_error_type,
         prob_size_cell_r=config.CELL_PROB_SIZE_R,
     ):
-        self.cur_step = None
-        self.drone_com_range = drone_com_range
-        self.drone_sen_range = drone_sen_range
         self.drone_speed = drone_speed
         self.drone_max_buffer_size = drone_max_buffer_size
         self.drone_max_energy = drone_max_energy
@@ -78,7 +73,9 @@ class Simulator:
 
         # --------------- cell for drones -------------
         self.prob_size_cell_r = prob_size_cell_r
-        self.prob_size_cell = int(self.drone_com_range * self.prob_size_cell_r)
+        self.prob_size_cell = int(
+            config.drone_communication_range * self.prob_size_cell_r
+        )
         self.cell_prob_map = defaultdict(lambda: [0, 0, 0])
 
         self.sim_save_file = config.SAVE_PLOT_DIR + self.__sim_name()
@@ -123,8 +120,8 @@ class Simulator:
                 "n_drones": self.n_drones,
                 "env_width": self.env_width,
                 "env_height": self.env_height,
-                "drone_com_range": self.drone_com_range,
-                "drone_sen_range": self.drone_sen_range,
+                "drone_com_range": config.drone_communication_range,
+                "drone_sen_range": config.drone_sensing_range,
                 "drone_speed": self.drone_speed,
                 "drone_max_buffer_size": self.drone_max_buffer_size,
                 "drone_max_energy": self.drone_max_energy,
@@ -203,12 +200,12 @@ class Simulator:
 
     def __plot(self, cur_step):
         """plot the simulation"""
-        # if cur_step % config.SKIP_SIM_STEP != 0:
-        # return
+        if cur_step % config.SKIP_SIM_STEP != 0:
+            return
 
         # delay draw
-        # if config.WAIT_SIM_STEP > 0:
-        #     time.sleep(config.WAIT_SIM_STEP)
+        if config.WAIT_SIM_STEP > 0:
+            time.sleep(config.WAIT_SIM_STEP)
 
         # drones plot
         for drone in self.drones:
@@ -272,6 +269,10 @@ class Simulator:
         for drone in self.drones:
             method(drone, *args)
 
+    def apply_for_all_entities(self, method, *args):
+        for entity in [self.depot, *self.drones]:
+            method(entity, *args)
+
     def run(self):
         """
         Simulator main function
@@ -280,34 +281,30 @@ class Simulator:
 
         for cur_step in tqdm(range(self.len_simulation), disable=True):
 
-            self.cur_step = cur_step
             self.handle_events_generation(cur_step)
 
             self.apply_for_each_drone(Drone.set_time, cur_step)
             self.depot.time = cur_step
+
             self.apply_for_each_drone(Drone.listen)
             self.depot.listen()
             self.network_dispatcher.packets = []
+
             self.apply_for_each_drone(Drone.update_packets)
+
             self.apply_for_each_drone(Drone.routing)
             self.depot.routing()
+
             self.apply_for_each_drone(Drone.send_packets)
             self.depot.send_packets()
-            # self.apply_for_each_drone(Drone.move, self.time_step_duration)
-            time.sleep(0.1)
+
+            self.apply_for_each_drone(Drone.move, self.time_step_duration)
+            # time.sleep(0.01)
 
             # for drone in self.drones:
             #     # 1. update expired packets on drone buffers
             #     # 2. try routing packets vs other drones or depot
             #     # 3. actually move the drone towards next waypoint or depot
-            #
-            #     drone.set_time(cur_step)
-            #     drone.listen()
-            #     drone.update_packets()
-            #     drone.routing()
-            #     drone.send_packets()
-            #     drone.move(self.time_step_duration)
-            #     # TODO: send packets from output buffer here
 
             # in case we need probability map
             if config.ENABLE_PROBABILITIES:

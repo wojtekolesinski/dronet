@@ -140,7 +140,7 @@ class PathPlanningDrawer:
         stddraw.text(
             depot.coords[0],
             depot.coords[1] + 100,
-            "pk: " + str(len(depot.all_packets())),
+            "pk: " + str(len(depot.buffer)),
         )
 
     def __draw_sensing_range(self, body):
@@ -182,6 +182,11 @@ class PathPlanningDrawer:
         # life time and speed
         stddraw.text(
             drone.coords[0] - 50, drone.coords[1], "buf: " + str(drone.buffer_length())
+        )
+        stddraw.text(
+            drone.coords[0] - 50,
+            drone.coords[1] - 30,
+            "rbuf: " + str(drone.retransmission_buffer.__len__()),
         )
         # index
         stddraw.text(

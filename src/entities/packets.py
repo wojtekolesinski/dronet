@@ -2,7 +2,6 @@ import config
 from entities.base import Entity
 from entities.event import Event
 from simulation.metrics import Metrics
-from utilities import utilities
 from utilities.types import NetAddr, Point
 
 

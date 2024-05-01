@@ -57,7 +57,7 @@ class MediumDispatcher:
                 continue
 
             distance = util.euclidean_distance(pos, packet_pos)
-            if distance > min(communication_range, comm_range):
+            if distance > max(communication_range, comm_range):
                 continue
 
             if not self.channel_success(distance, no_error=True):

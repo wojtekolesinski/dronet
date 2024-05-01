@@ -3,7 +3,7 @@ import dataclasses
 
 import config
 from entities.communicating_entity import CommunicatingEntity
-from entities.packets import DataPacket, HelloPacket, Packet
+from entities.packets import HelloPacket, Packet
 from simulation.metrics import Metrics
 from utilities.types import NetAddr, Point
 
@@ -42,11 +42,11 @@ class BASE_routing(metaclass=abc.ABCMeta):
         self.neighbours: dict[NetAddr, NeighbourNode] = dict()
 
     @abc.abstractmethod
-    def relay_selection(self, packet: DataPacket) -> NeighbourNode:
+    def relay_selection(self, packet: Packet) -> NeighbourNode:
         pass
 
     def filter_neighbours_for_packet(
-        self, packet: DataPacket
+        self, packet: Packet
     ) -> dict[NetAddr, NeighbourNode]:
         # filter out the original sender of the packet, and the last relay node
         # neighbours = set(
@@ -92,13 +92,14 @@ class BASE_routing(metaclass=abc.ABCMeta):
             packets.append(hello_packet)
         return packets
 
-    def route_packet(self, packet: DataPacket) -> DataPacket:
+    def route_packet(self, packet: Packet) -> Packet | None:
         Metrics.instance().mean_numbers_of_possible_relays.append(len(self.neighbours))
         best_neighbor = self.relay_selection(packet)
         if best_neighbor is None:
-            print("Cannot find a neighbour")
+            # print("Cannot find a neighbour")
             return
 
+        # TODO: handle ttl
         packet.dst_relay = best_neighbor.address
         packet.src_relay = self.drone.address
         self.retransmission_count += 1

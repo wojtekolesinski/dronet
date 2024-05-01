@@ -19,4 +19,4 @@ class Entity:
             return other.identifier == self.identifier
 
     def __hash__(self):
-        return hash((self.identifier, self.coords))
+        return hash((self.identifier))

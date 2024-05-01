@@ -4,8 +4,8 @@ from utilities import utilities as util
 
 class QLearningRouting(BASE_routing):
 
-    def __init__(self, drone, simulator):
-        BASE_routing.__init__(self, drone=drone, simulator=simulator)
+    def __init__(self, drone):
+        BASE_routing.__init__(self, drone=drone)
         self.taken_actions = {}  # id event : (old_state, old_action)
 
     def feedback(self, drone, id_event, delay, outcome):
@@ -31,9 +31,9 @@ class QLearningRouting(BASE_routing):
             # TIPS: implement here the q-table updating process
 
             # Drone id and Taken actions
-            print(
-                f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}"
-            )
+            # print(
+            #     f"\nIdentifier: {self.drone.identifier}, Taken Actions: {self.taken_actions}, Time Step: {self.simulator.cur_step}"
+            # )
 
             # feedback from the environment
             print(drone, id_event, delay, outcome)
@@ -48,7 +48,7 @@ class QLearningRouting(BASE_routing):
             # reward or update using the old state and the selected action at that time
             # do something or train the model (?)
 
-    def relay_selection(self, opt_neighbors: list, packet):
+    def relay_selection(self, packet):
         """
         This function returns the best relay to send packets.
         @param packet:
