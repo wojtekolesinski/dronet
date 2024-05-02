@@ -33,6 +33,7 @@ class Depot(CommunicatingEntity):
     def consume_packet(self, packet: Packet):
         if isinstance(packet, DataPacket):
             self.acknowledge_packet(packet)
+            Metrics.instance().drones_packets_to_depot.append((packet, self.time))
             self.buffer.append(packet)
             logger.debug(
                 f"Got packet with id {packet.identifier} from drone {packet.src}"

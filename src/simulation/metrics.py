@@ -41,7 +41,7 @@ class Metrics:
         self.drones_packets = set()
 
         # all the packets notified to the depot
-        self.drones_packets_to_depot = set()
+        self.drones_packets_to_depot = list()
 
         # all packets notified to depot -- but with order
         self.drones_packets_to_depot_list = []
@@ -87,7 +87,7 @@ class Metrics:
         # DELIVERY TIME -> METRIC FOR PLOT
         for pck, delivery_ts in self.drones_packets_to_depot:
             # time between packet generation and packet delivery to depot
-            packet_delivery_times.append(delivery_ts - pck.time_step_creation)
+            packet_delivery_times.append(delivery_ts - pck.timestamp)
 
             # time between event generation and packet delivery to depot -> dict to help computation
             event_delivery_times_dict[pck.event_ref.identifier].append(
@@ -134,7 +134,7 @@ class Metrics:
             "Data packets generated during simulation: ",
             self.all_data_packets_in_simulation,
         )
-        print("Number of packets to depot: ", len(self.drones_packets_to_depot_list))
+        print("Number of packets to depot: ", len(self.drones_packets_to_depot))
         print("Packet mean delivery time (seconds): ", self.packet_mean_delivery_time)
         print(
             "Packet delivery ratio: ",
