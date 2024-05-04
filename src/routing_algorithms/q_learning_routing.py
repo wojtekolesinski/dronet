@@ -1,11 +1,11 @@
-from routing_algorithms.BASE_routing import BASE_routing
+from routing_algorithms.base import BaseRouting
 from utilities import utilities as util
 
 
-class QLearningRouting(BASE_routing):
+class QLearningRouting(BaseRouting):
 
     def __init__(self, drone):
-        BASE_routing.__init__(self, drone=drone)
+        BaseRouting.__init__(self, drone=drone)
         self.taken_actions = {}  # id event : (old_state, old_action)
 
     def feedback(self, drone, id_event, delay, outcome):

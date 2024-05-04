@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 from scipy.stats import norm
 
@@ -63,7 +65,8 @@ class MediumDispatcher:
             if not self.channel_success(distance, no_error=True):
                 continue
 
-            packets_to_send.append(packet)
+            packets_to_send.append(copy.deepcopy(packet))
+
         return packets_to_send
 
     def gaussian_success_handler(self, drones_distance):

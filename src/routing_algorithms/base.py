@@ -32,7 +32,7 @@ class NeighbourNode:
         )
 
 
-class BASE_routing(metaclass=abc.ABCMeta):
+class BaseRouting(metaclass=abc.ABCMeta):
 
     def __init__(self, drone: CommunicatingEntity):
         """The drone that is doing routing and simulator object."""
@@ -48,14 +48,6 @@ class BASE_routing(metaclass=abc.ABCMeta):
     def filter_neighbours_for_packet(
         self, packet: Packet
     ) -> dict[NetAddr, NeighbourNode]:
-        # filter out the original sender of the packet, and the last relay node
-        # neighbours = set(
-        #     [
-        #         n
-        #         for n in self.neighbours
-        #         if n.address not in (packet.src, packet.src_relay)
-        #     ]
-        # )
         return self.neighbours
 
     def handle_hello(self, packet: HelloPacket):
@@ -96,7 +88,6 @@ class BASE_routing(metaclass=abc.ABCMeta):
         Metrics.instance().mean_numbers_of_possible_relays.append(len(self.neighbours))
         best_neighbor = self.relay_selection(packet)
         if best_neighbor is None:
-            # print("Cannot find a neighbour")
             return
 
         # TODO: handle ttl

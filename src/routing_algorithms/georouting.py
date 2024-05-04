@@ -1,14 +1,14 @@
 import config
 from entities.packets import DataPacket, HelloPacket, Packet
-from routing_algorithms.BASE_routing import BASE_routing, NeighbourNode
+from routing_algorithms.base import BaseRouting, NeighbourNode
 from utilities.types import Point
 from utilities.utilities import euclidean_distance
 
 
-class GeoRouting(BASE_routing):
+class GeoRouting(BaseRouting):
 
     def __init__(self, drone):
-        BASE_routing.__init__(self, drone)
+        BaseRouting.__init__(self, drone)
 
     def get_position_estimate(
         self, start: Point, target: Point, speed: int, time_diff: int

@@ -1,13 +1,13 @@
 from numpy.random import RandomState
 
 import config
-from routing_algorithms.BASE_routing import BASE_routing
+from routing_algorithms.base import BaseRouting
 
 
-class RandomRouting(BASE_routing):
+class RandomRouting(BaseRouting):
 
     def __init__(self, drone):
-        BASE_routing.__init__(self, drone)
+        BaseRouting.__init__(self, drone)
         self.random = RandomState(config.seed)
 
     def relay_selection(self, packet):
