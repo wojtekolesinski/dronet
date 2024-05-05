@@ -1,7 +1,7 @@
 import config
-from entities.packets import DataPacket, HelloPacket, Packet
-from routing_algorithms.base import BaseRouting, NeighbourNode
-from utilities.types import Point
+from entities.packets import Packet
+from routing_algorithms.base import BaseRouting
+from utilities.types import NetAddr, Point
 from utilities.utilities import euclidean_distance
 
 
@@ -29,7 +29,7 @@ class GeoRouting(BaseRouting):
         current_x = start[0] + (target[0] - start[0]) * time_passed_fraction
         return current_x, f(current_x)
 
-    def relay_selection(self, packet: Packet) -> NeighbourNode | None:
+    def relay_selection(self, packet: Packet) -> NetAddr | None:
         """
         This function returns a relay for packets according to geographic routing.
 
@@ -46,11 +46,9 @@ class GeoRouting(BaseRouting):
         else:
             dst_pos = packet.event_ref.coords
 
-        # my_distance_to_depot = util.euclidean_distance(cur_pos, depot_pos)
-
         best_distance = euclidean_distance(cur_pos, dst_pos)
         best_drone = None
-        neighbours = self.filter_neighbours_for_packet(packet)
+        neighbours = self.neighbours
         for neighbour in neighbours.values():
             neighbor_pos = neighbour.coords
             neighbor_distance_to_depot = euclidean_distance(neighbor_pos, dst_pos)
@@ -58,4 +56,6 @@ class GeoRouting(BaseRouting):
                 best_drone = neighbour
                 best_distance = neighbor_distance_to_depot
 
-        return best_drone
+        if best_drone is None:
+            return
+        return best_drone.address

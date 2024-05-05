@@ -5,10 +5,12 @@ from typing import Literal
 
 import config
 from entities.communicating_entity import CommunicatingEntity
-from entities.packets.base import HelloPacket
+from entities.packets.base import DataPacket, HelloPacket, Packet
 from entities.packets.olsr import (LinkCode, LinkType, NeighbourType,
-                                   OLSRHelloPacket)
+                                   OLSRDataPacket, OLSRHelloPacket, OLSRPacket,
+                                   OLSRTopologyControlPacket)
 from routing_algorithms.base import BaseRouting
+from src.entities.event import Event
 from utilities.types import NetAddr
 
 
@@ -48,6 +50,21 @@ class TopologyTuple:
     time: int
 
 
+@dataclass
+class RouteTuple:
+    destination_address: NetAddr
+    next_address: NetAddr
+    dist: int
+
+
+@dataclass
+class DuplicateTuple:
+    address: NetAddr
+    seq: int
+    retransmitted: bool
+    time: int
+
+
 def get_link_type(link: LinkTuple, cur_time: int) -> LinkType:
     if link.sym_time >= cur_time:
         return "SYM_LINK"
@@ -62,7 +79,9 @@ class OLSRRouting(BaseRouting):
     two_hop_neighbours: dict[tuple[NetAddr, NetAddr], TwoHopNeigbourTuple]
     mprs: set[NetAddr]
     mpr_selectors: dict[NetAddr, MprSelectorTuple]
-    topology_info: dict[NetAddr, TopologyTuple]
+    topology_info: set[TopologyTuple]
+    routing_table: set[RouteTuple]
+    duplicate_set: dict[tuple[NetAddr, int], DuplicateTuple]
     willingness: int
 
     def __init__(self, drone: CommunicatingEntity):
@@ -72,15 +91,69 @@ class OLSRRouting(BaseRouting):
         self.two_hop_neighbours = dict()
         self.mprs = set()
         self.mpr_selectors = dict()
-        self.topology_info = dict()
+        self.topology_info = set()
+        self.duplicate_set = dict()
         self.willingness = 3
+        self.ansn = itertools.count(0, 1)
+        self.sequence_number = itertools.count(0, 1)
+
+    def process(self, packet: Packet):
+        assert isinstance(packet, OLSRPacket)
+        if packet.ttl <= 0:
+            return
+
+        if (packet.src, packet.sequence_number) in self.duplicate_set:
+            return
+
+        self.duplicate_set[(packet.src, packet.sequence_number)] = DuplicateTuple(
+            address=packet.src,
+            seq=packet.sequence_number,
+            retransmitted=False,
+            time=self.drone.time,
+        )
+
+        if isinstance(packet, OLSRTopologyControlPacket):
+            self.process_tc(packet)
+        super().process(packet)
+
+    def should_forward(self, packet: Packet) -> bool:
+        assert isinstance(packet, OLSRPacket)
+        if (
+            packet.src,
+            packet.sequence_number,
+        ) in self.duplicate_set and self.duplicate_set[
+            (packet.src, packet.sequence_number)
+        ].retransmitted:
+            return False
+
+        if packet.src_relay not in self.neighbours:
+            return False
+
+        if self.neighbours[packet.src_relay].status != "sym":
+            return False
+
+        retransmit = packet.src_relay in self.mpr_selectors and packet.ttl > 1
+
+        dt = self.duplicate_set.get(
+            (packet.src, packet.sequence_number),
+            DuplicateTuple(
+                address=packet.src,
+                seq=packet.sequence_number,
+                retransmitted=retransmit,
+                time=self.drone.time + config.duplicate_hold_time,
+            ),
+        )
+        self.duplicate_set[(packet.src, packet.sequence_number)] = dt
+        packet.ttl -= 1
+        packet.hop_count += 1
+        return True
 
     def get_neighbour_type(self, address: NetAddr) -> NeighbourType:
         if address in self.mprs:
             return "MPR_NEIGH"
 
         neighbours_for_link = list(
-            filter(lambda n: n.address == address, self.neighbours)
+            filter(lambda n: n.address == address, self.neighbours.values())
         )
         if len(neighbours_for_link) == 0:
             raise Exception("Cannot determine neighbour type")
@@ -113,6 +186,7 @@ class OLSRRouting(BaseRouting):
             self.drone.coords,
             self.drone.speed,
             self.drone.next_target(),
+            next(self.sequence_number),
         )
         olsr_packet.willingness = self.willingness
         olsr_packet.htime = config.HELLO_DELAY
@@ -120,7 +194,7 @@ class OLSRRouting(BaseRouting):
 
         return olsr_packet
 
-    def handle_hello(self, packet: HelloPacket):
+    def process_hello(self, packet: HelloPacket):
         assert isinstance(packet, OLSRHelloPacket)
 
         validity_time = self.drone.time + packet.vtime
@@ -180,22 +254,147 @@ class OLSRRouting(BaseRouting):
         for link_code, addresses in packet.links.items():
             if self.drone.address in addresses:
                 if link_code.neighbour_type == "MPR_NEIGH":
-                    selector = self.mpr_selectors.get(packet.src, MprSelectorTuple(packet.src, validity_time))
+                    selector = self.mpr_selectors.get(
+                        packet.src, MprSelectorTuple(packet.src, validity_time)
+                    )
                     selector.time = validity_time
                     self.mpr_selectors[packet.src] = selector
                 break
 
+    def process_tc(self, packet: OLSRTopologyControlPacket):
+        if packet.src_relay not in self.neighbours:
+            return
+
+        for tt in self.topology_info:
+            if tt.last_address == packet.src and tt.seq > packet.ansn:
+                return
+
+        temp_topology_dict = dict()
+        for tt in self.topology_info:
+            if tt.last_address == packet.src and tt.seq < packet.ansn:
+                continue
+            temp_topology_dict[(tt.last_address, tt.address)] = tt
+
+        for neigbhour in packet.advertised_neigbours:
+            tt = temp_topology_dict.get(
+                (packet.src, neigbhour),
+                TopologyTuple(
+                    address=neigbhour,
+                    last_address=packet.src,
+                    seq=packet.ansn,
+                    time=self.drone.time + packet.vtime,
+                ),
+            )
+            temp_topology_dict[(tt.last_address, tt.address)] = tt
+
+        self.topology_info = set(temp_topology_dict.values())
+
+    def update_routing_table(self):
+        self.routing_table = set()
+
+        for n in self.neighbours.values():
+            if n.status == "sym":
+                self.routing_table.add(
+                    RouteTuple(
+                        destination_address=n.address, next_address=n.address, dist=1
+                    )
+                )
+
+        for n in self.two_hop_neighbours.values():
+            self.routing_table.add(
+                RouteTuple(
+                    destination_address=n.two_hop_address,
+                    next_address=n.address,
+                    dist=2,
+                )
+            )
+
+        dist = 2
+        visited = {r.destination_address: r.dist for r in self.routing_table}
+        new_neigbour = True
+        while new_neigbour:
+            new_neigbour = False
+            for tt in self.topology_info:
+                if tt.address in visited or tt.last_address not in visited:
+                    continue
+
+                if visited[tt.last_address] != dist:
+                    continue
+
+                new_neigbour = True
+                self.routing_table.add(
+                    RouteTuple(
+                        destination_address=tt.address,
+                        next_address=tt.last_address,
+                        dist=dist + 1,
+                    )
+                )
+                visited[tt.address] = dist + 1
 
     def update_mprs(self):
         # TODO: implement the full selection heuristic
         self.mprs = set()
-        for n in self.neighbours.values()
+        for n in self.neighbours.values():
             if self.get_neighbour_type(n.address) == "SYM_NEIGH":
                 self.mprs.add(n.address)
 
     def update_neighbours(self, cur_step: int):
-        return super().update_neighbours(cur_step)
-        # TODO: delete links after timeout
-        # delete neigbour coressponding to the link
-        # update neigbourhood according to 8.5
-        # update mprs the same way
+
+        to_delete: list[NetAddr] = list()
+        for address, link in self.links.items():
+            if link.time < cur_step:
+                to_delete.append(address)
+
+        for addr in to_delete:
+            del self.links[addr]
+            del self.neighbours[addr]
+            for key in self.two_hop_neighbours:
+                if key[0] == addr:
+                    del self.two_hop_neighbours[key]
+
+        to_delete = list()
+        for address, selector in self.mpr_selectors.items():
+            if selector.time < cur_step:
+                to_delete.append(address)
+
+        for address in to_delete:
+            del self.mpr_selectors[address]
+
+        self.update_mprs()
+        self.update_routing_table()
+
+    def routing_control(self, cur_step: int) -> list[Packet]:
+        packets = super().routing_control(cur_step)
+        tc_packet = OLSRTopologyControlPacket(
+            self.drone.address,
+            config.BROADCAST_ADDRESS,
+            cur_step,
+            next(self.sequence_number),
+            next(self.ansn),
+            list(self.neighbours.keys()),
+        )
+        packets.append(tc_packet)
+        return packets
+
+    def relay_selection(self, packet: Packet) -> NetAddr | None:
+        lookup: dict[NetAddr, list[RouteTuple]] = defaultdict(list)
+        for rt in self.routing_table:
+            lookup[rt.destination_address].append(rt)
+
+        if packet.dst not in lookup:
+            return None
+
+        next_hop = lookup[packet.dst][0]
+        while next_hop.dist > 1:
+            next_hop = lookup[next_hop.next_address][0]
+
+        return next_hop.destination_address
+
+    def make_data_packet(self, event: Event, cur_step: int) -> DataPacket:
+        return OLSRDataPacket(
+            self.drone.address,
+            config.DEPOT_ADDRESS,
+            cur_step,
+            next(self.sequence_number),
+            event,
+        )

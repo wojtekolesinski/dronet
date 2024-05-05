@@ -3,8 +3,9 @@ import dataclasses
 
 import config
 from entities.communicating_entity import CommunicatingEntity
-from entities.packets import HelloPacket, Packet
+from entities.packets import ACKPacket, DataPacket, HelloPacket, Packet
 from simulation.metrics import Metrics
+from src.entities.event import Event
 from utilities.types import NetAddr, Point
 
 
@@ -38,19 +39,32 @@ class BaseRouting(metaclass=abc.ABCMeta):
         """The drone that is doing routing and simulator object."""
         self.drone = drone
         self.retransmission_count = 0
-        # TODO: this should be a dict, as currently updating the set is broken
         self.neighbours: dict[NetAddr, NeighbourNode] = dict()
 
     @abc.abstractmethod
-    def relay_selection(self, packet: Packet) -> NeighbourNode:
+    def relay_selection(self, packet: Packet) -> NetAddr | None:
         pass
 
-    def filter_neighbours_for_packet(
-        self, packet: Packet
-    ) -> dict[NetAddr, NeighbourNode]:
-        return self.neighbours
+    def process(self, packet: Packet):
+        if isinstance(packet, HelloPacket):
+            self.process_hello(packet)
+            return
 
-    def handle_hello(self, packet: HelloPacket):
+        if packet.dst != self.drone.address:
+            if self.should_forward(packet):
+                self.drone.retransmission_buffer.add(packet)
+                return
+
+        elif isinstance(packet, DataPacket):
+            self.drone.acknowledge_packet(packet)
+            self.drone.buffer.append(packet)
+
+        elif isinstance(packet, ACKPacket):
+            self.drone.remove_packets([packet.acked_packet_id])
+            if self.drone.buffer_length() == 0:
+                self.retransmission_count = 0
+
+    def process_hello(self, packet: HelloPacket):
         self.neighbours[packet.src] = NeighbourNode.from_hello_packet(packet)
 
     def drone_identification(self, cur_step: int) -> HelloPacket | None:
@@ -91,10 +105,16 @@ class BaseRouting(metaclass=abc.ABCMeta):
             return
 
         # TODO: handle ttl
-        packet.dst_relay = best_neighbor.address
+        packet.dst_relay = best_neighbor
         packet.src_relay = self.drone.address
         self.retransmission_count += 1
         return packet
 
     def has_neighbours(self) -> bool:
         return len(self.neighbours) > 0
+
+    def should_forward(self, packet: Packet) -> bool:
+        return True
+
+    def make_data_packet(self, event: Event, cur_step: int) -> DataPacket:
+        return DataPacket(self.drone.address, config.DEPOT_ADDRESS, cur_step, event)
