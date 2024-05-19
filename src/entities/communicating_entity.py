@@ -37,6 +37,7 @@ class CommunicatingEntity(Entity):
         self.retransmission_buffer: set[Packet] = set()
         self.time = 0
         self.speed = speed
+        self.router = config.routing_algorithm.value(self)
 
     def listen(self):
         packets = self.network.listen(
@@ -58,9 +59,7 @@ class CommunicatingEntity(Entity):
         pass
 
     def acknowledge_packet(self, packet: Packet):
-        ack_packet = ACKPacket(self.address, packet.src, self.time, packet.identifier)
-        ack_packet.event_ref = packet.event_ref
-        ack_packet.dst_relay = packet.src_relay
+        ack_packet = self.router.make_ack_packet(packet)
         self.output_buffer.append(ack_packet)
 
     def set_time(self, timestamp: int):
@@ -79,7 +78,12 @@ class CommunicatingEntity(Entity):
         - packets from buffer, that were generated in this moment.
         - packets from buffer, that should be retransmitted
         - all packets from retransmission_buffer"""
-        packets = [*self.retransmission_buffer]
+        packets = []
+        for packet in self.retransmission_buffer:
+            if packet.dst == config.BROADCAST_ADDRESS:
+                self.output_buffer.append(packet)
+            else:
+                packets.append(packet)
         for packet in self.buffer:
             if (self.time - packet.timestamp) % config.retransmission_delay == 0:
                 packets.append(packet)
@@ -94,6 +98,7 @@ class CommunicatingEntity(Entity):
 
     def send_packets(self):
         for packet in self.output_buffer:
+            packet.src_relay = self.address
             self.network.send(packet, self.coords, self.communication_range)
         self.empty_buffer()
 

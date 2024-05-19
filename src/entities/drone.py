@@ -2,7 +2,7 @@ import config
 from entities.communicating_entity import CommunicatingEntity
 from entities.depot import Depot
 from entities.event import Event
-from entities.packets import DataPacket, Packet
+from entities.packets import Packet
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
 from utilities import utilities
@@ -38,9 +38,6 @@ class Drone(CommunicatingEntity):
         # dynamic parameters
         # used later to check if there is an event that is about to expire
         self.current_waypoint = 0
-
-        # setup drone routing algorithm
-        self.router = config.routing_algorithm.value(self)
 
     def consume_packet(self, packet: Packet):
         self.router.process(packet)

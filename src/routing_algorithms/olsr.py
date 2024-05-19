@@ -5,12 +5,19 @@ from typing import Literal
 
 import config
 from entities.communicating_entity import CommunicatingEntity
+from entities.event import Event
 from entities.packets.base import DataPacket, HelloPacket, Packet
-from entities.packets.olsr import (LinkCode, LinkType, NeighbourType,
-                                   OLSRDataPacket, OLSRHelloPacket, OLSRPacket,
-                                   OLSRTopologyControlPacket)
+from entities.packets.olsr import (
+    LinkCode,
+    LinkType,
+    NeighbourType,
+    OLSRACKPacket,
+    OLSRDataPacket,
+    OLSRHelloPacket,
+    OLSRPacket,
+    OLSRTopologyControlPacket,
+)
 from routing_algorithms.base import BaseRouting
-from src.entities.event import Event
 from utilities.types import NetAddr
 
 
@@ -42,7 +49,7 @@ class MprSelectorTuple:
     time: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class TopologyTuple:
     address: NetAddr
     last_address: NetAddr
@@ -50,7 +57,7 @@ class TopologyTuple:
     time: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class RouteTuple:
     destination_address: NetAddr
     next_address: NetAddr
@@ -98,7 +105,9 @@ class OLSRRouting(BaseRouting):
         self.sequence_number = itertools.count(0, 1)
 
     def process(self, packet: Packet):
-        assert isinstance(packet, OLSRPacket)
+        assert isinstance(
+            packet, OLSRPacket
+        ), f"Packet from {packet.src} is type {type(packet)}"
         if packet.ttl <= 0:
             return
 
@@ -143,6 +152,7 @@ class OLSRRouting(BaseRouting):
                 time=self.drone.time + config.duplicate_hold_time,
             ),
         )
+        dt.retransmitted = True
         self.duplicate_set[(packet.src, packet.sequence_number)] = dt
         packet.ttl -= 1
         packet.hop_count += 1
@@ -248,7 +258,8 @@ class OLSRRouting(BaseRouting):
                     self.two_hop_neighbours[(packet.src, address)] = neighbour
             elif link_code.neighbour_type == "NOT_NEIGH":
                 for address in addresses:
-                    del self.two_hop_neighbours[(packet.src, address)]
+                    if (packet.src, address) in self.two_hop_neighbours:
+                        del self.two_hop_neighbours[(packet.src, address)]
 
         # update mpr selectors
         for link_code, addresses in packet.links.items():
@@ -287,7 +298,10 @@ class OLSRRouting(BaseRouting):
             )
             temp_topology_dict[(tt.last_address, tt.address)] = tt
 
-        self.topology_info = set(temp_topology_dict.values())
+        self.topology_info = set()
+        for t in temp_topology_dict.values():
+            if t.address != self.drone.address and t.last_address != self.drone.address:
+                self.topology_info.add(t)
 
     def update_routing_table(self):
         self.routing_table = set()
@@ -310,7 +324,14 @@ class OLSRRouting(BaseRouting):
             )
 
         dist = 2
-        visited = {r.destination_address: r.dist for r in self.routing_table}
+        visited = {}
+        for r in self.routing_table:
+            if (
+                r.destination_address not in visited
+                or visited[r.destination_address] > r.dist
+            ):
+                visited[r.destination_address] = r.dist
+
         new_neigbour = True
         while new_neigbour:
             new_neigbour = False
@@ -330,6 +351,7 @@ class OLSRRouting(BaseRouting):
                     )
                 )
                 visited[tt.address] = dist + 1
+            dist += 1
 
     def update_mprs(self):
         # TODO: implement the full selection heuristic
@@ -348,7 +370,7 @@ class OLSRRouting(BaseRouting):
         for addr in to_delete:
             del self.links[addr]
             del self.neighbours[addr]
-            for key in self.two_hop_neighbours:
+            for key in list(self.two_hop_neighbours.keys()):
                 if key[0] == addr:
                     del self.two_hop_neighbours[key]
 
@@ -365,6 +387,8 @@ class OLSRRouting(BaseRouting):
 
     def routing_control(self, cur_step: int) -> list[Packet]:
         packets = super().routing_control(cur_step)
+        if not packets:
+            return packets
         tc_packet = OLSRTopologyControlPacket(
             self.drone.address,
             config.BROADCAST_ADDRESS,
@@ -380,13 +404,23 @@ class OLSRRouting(BaseRouting):
         lookup: dict[NetAddr, list[RouteTuple]] = defaultdict(list)
         for rt in self.routing_table:
             lookup[rt.destination_address].append(rt)
+        for routes in lookup.values():
+            routes.sort(key=lambda r: r.dist)
 
         if packet.dst not in lookup:
+            print(f"{self.drone.identifier}\tcannot find destination")
             return None
 
         next_hop = lookup[packet.dst][0]
+        prev_hop = next_hop
         while next_hop.dist > 1:
+            prev_hop = next_hop
             next_hop = lookup[next_hop.next_address][0]
+            if prev_hop.destination_address == next_hop.next_address:
+                return None
+
+        if next_hop.destination_address == packet.src_relay:
+            return None
 
         return next_hop.destination_address
 
@@ -398,3 +432,15 @@ class OLSRRouting(BaseRouting):
             next(self.sequence_number),
             event,
         )
+
+    def make_ack_packet(self, packet: Packet):
+        ack_packet = OLSRACKPacket(
+            self.drone.address,
+            packet.src,
+            self.drone.time,
+            packet.identifier,
+            next(self.sequence_number),
+        )
+        ack_packet.event_ref = packet.event_ref
+        ack_packet.dst_relay = packet.src_relay
+        return ack_packet

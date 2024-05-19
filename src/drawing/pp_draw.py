@@ -2,8 +2,8 @@ from collections import defaultdict
 
 import config
 from drawing import stddraw
+from entities.drone import Drone
 from entities.event import Event
-from entities.uav_entities import Drone
 from utilities import utilities
 
 

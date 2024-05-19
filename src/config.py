@@ -1,9 +1,11 @@
 from enum import Enum
 
+from routing_algorithms.base import NeighbourNode
 from routing_algorithms.georouting import GeoRouting
+from routing_algorithms.olsr import OLSRRouting
 from routing_algorithms.q_learning_routing import QLearningRouting
 from routing_algorithms.random_routing import RandomRouting
-from utilities.types import NetAddr
+from utilities.types import NetAddr, Point
 
 """
 This file contains all the constants and parameters of the simulator.
@@ -32,7 +34,8 @@ PATH_FROM_JSON = (
 )
 # otherwise path are generated online
 JSONS_PATH_PREFIX = (
-    "data/tours/RANDOM_missions0.json"  # str: the path to the drones tours,
+    "data/tours/RANDOM_missions01.json"  # str: the path to the drones tours,
+    # "data/tours/test_routing_no_movement.json"  # str: the path to the drones tours,
 )
 # the {} should be used to specify the seed -> es. data/tours/RANDOM_missions1.json for seed 1.
 RANDOM_STEPS = [
@@ -55,7 +58,7 @@ EXPERIMENTS_DIR = (
 )
 
 # drawaing
-show_plot = True  # bool: whether to plot or not the simulation.
+show_plot = False  # bool: whether to plot or not the simulation.
 WAIT_SIM_STEP = (
     0  # .1     # float: seconds, pauses the rendering for 'DELAY_PLOT' seconds.
 )
@@ -78,7 +81,7 @@ len_simulation = 18000  # int: steps of simulation. # ***
 time_step_duration = 0.150  # float: seconds duration of a step in seconds.
 seed = 10  # int: seed of this simulation.
 
-n_drones = 5  # int: number of drones. # ***
+n_drones = 30  # int: number of drones. # ***
 env_width = 1500  # int: meters, width of environment.
 env_height = 1500  # int: height of environment.
 
@@ -90,14 +93,14 @@ event_generation_prob = 0.8  # float: probability that the drones feels the even
 """ e.g. given D_FEEL_EVENT = 500, P_FEEL_EVENT = .5, every 500 steps with probability .5 the drone will feel an event."""
 
 # drones
-drone_communication_range = 150  # float: meters, communication range of the drones.
+drone_communication_range = 400  # float: meters, communication range of the drones.
 drone_sensing_range = 0  # int: meters, the sensing range of the drones.
 drone_speed = 8  # int: m/s, drone speed.
 drone_max_buffer_size = 10000  # int: max number of packets in the buffer of a drone.
 drone_max_energy = 1000000  # int: max energy of a drone.
 
 # depot
-depot_communication_range = 150  # int: meters, communication range of the depot.
+depot_communication_range = 400  # int: meters, communication range of the depot.
 depot_coordinates = (750, 0)  # (int, int): coordinates of the depot.
 
 
@@ -106,6 +109,7 @@ class RoutingAlgorithm(Enum):
     GEO = GeoRouting
     RND = RandomRouting
     QL = QLearningRouting
+    OLSR = OLSRRouting
 
     @staticmethod
     def keylist():
@@ -130,12 +134,14 @@ communication_success_prob: float = (
 )
 GUASSIAN_SCALE = 0.9  # float [0,1]: scale the error probability of the guassian -> success * GUASSIAN_SCALER
 packets_max_ttl = (
-    200  # float: threshold in the maximum number of hops. Causes loss of packets.
+    64  # float: threshold in the maximum number of hops. Causes loss of packets.
 )
-retransmission_delay = 10  # int: how many time steps to wait before transmit again (for k retransmissions). # ---  #delta_k
+retransmission_delay = 30  # int: how many time steps to wait before transmit again (for k retransmissions). # ---  #delta_k
 
 # ------------------------------------------- ROUTING MISC --------------------------------- #
-HELLO_DELAY = 5  # int : how many time steps wait before transmit again an hello message
+HELLO_DELAY = (
+    30  # int : how many time steps wait before transmit again an hello message
+)
 RECEPTION_GRANTED = (
     0.95  # float : the min amount of success to evalute a neigh as relay
 )
@@ -151,3 +157,17 @@ DEPOT_ADDRESS: NetAddr = 1
 # --------------- new cell probabilities -------------- #
 CELL_PROB_SIZE_R = 1.875  # the percentage of cell size with respect to drone com range
 ENABLE_PROBABILITIES = False
+
+
+DEPOT_NODE = NeighbourNode(
+    DEPOT_ADDRESS,
+    len_simulation,
+    depot_coordinates,
+    Point(),
+    0,
+)
+
+
+# olsr
+vtime: int = 45
+duplicate_hold_time: int = 60

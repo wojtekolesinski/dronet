@@ -3,9 +3,9 @@ import dataclasses
 
 import config
 from entities.communicating_entity import CommunicatingEntity
+from entities.event import Event
 from entities.packets import ACKPacket, DataPacket, HelloPacket, Packet
 from simulation.metrics import Metrics
-from src.entities.event import Event
 from utilities.types import NetAddr, Point
 
 
@@ -118,3 +118,11 @@ class BaseRouting(metaclass=abc.ABCMeta):
 
     def make_data_packet(self, event: Event, cur_step: int) -> DataPacket:
         return DataPacket(self.drone.address, config.DEPOT_ADDRESS, cur_step, event)
+
+    def make_ack_packet(self, packet: Packet):
+        ack_packet = ACKPacket(
+            self.drone.address, packet.src, self.drone.time, packet.identifier
+        )
+        ack_packet.event_ref = packet.event_ref
+        ack_packet.dst_relay = packet.src_relay
+        return ack_packet

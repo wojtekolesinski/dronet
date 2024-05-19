@@ -42,6 +42,7 @@ class Packet(Entity):
         self.timestamp = timestamp
         self.event_ref = event_ref_crafted
         self.ttl = config.packets_max_ttl
+        self.hop_count = 0
 
         if event_ref is not None:
             self.add = Metrics.instance().drones_packets.add(self)

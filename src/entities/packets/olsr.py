@@ -3,14 +3,14 @@ from typing import Literal
 
 import config
 from entities.event import Event
-from entities.packets.base import DataPacket, HelloPacket, Packet
+from entities.packets.base import ACKPacket, DataPacket, HelloPacket, Packet
 from utilities.types import NetAddr, Point
 
 LinkType = Literal["UNSPEC_LINK", "ASYM_LINK", "SYM_LINK", "LOST_LINK"]
 NeighbourType = Literal["SYM_NEIGH", "MPR_NEIGH", "NOT_NEIGH"]
 
 
-@dataclass
+@dataclass(frozen=True)
 class LinkCode:
     link_type: LinkType
     neighbour_type: NeighbourType
@@ -83,4 +83,20 @@ class OLSRDataPacket(DataPacket, OLSRPacket):
         event_ref: Event,
     ):
         DataPacket.__init__(self, source, destination, timestamp, event_ref)
+        OLSRPacket.__init__(self, sequence_number)
+
+
+class OLSRACKPacket(ACKPacket, OLSRPacket):
+    def __init__(
+        self,
+        source: NetAddr,
+        destination: NetAddr,
+        timestamp: int,
+        acked_packet_id: int,
+        sequence_number: int,
+        event_ref: Event | None = None,
+    ):
+        ACKPacket.__init__(
+            self, source, destination, timestamp, acked_packet_id, event_ref
+        )
         OLSRPacket.__init__(self, sequence_number)

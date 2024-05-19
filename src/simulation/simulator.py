@@ -7,8 +7,9 @@ from tqdm import tqdm
 
 import config
 from drawing import pp_draw
+from entities.depot import Depot
+from entities.drone import Drone
 from entities.environment import Environment
-from entities.uav_entities import *
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
 from utilities import utilities
@@ -279,8 +280,7 @@ class Simulator:
         @return: None
         """
 
-        for cur_step in tqdm(range(self.len_simulation), disable=True):
-
+        for cur_step in tqdm(range(self.len_simulation)):
             self.handle_events_generation(cur_step)
 
             self.apply_for_each_drone(Drone.set_time, cur_step)

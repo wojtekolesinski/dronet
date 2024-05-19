@@ -28,13 +28,13 @@ class Depot(CommunicatingEntity):
         )
 
         self.simulator = simulator
-        self.router = config.routing_algorithm.value(self)
 
     def consume_packet(self, packet: Packet):
+        self.router.process(packet)
         if isinstance(packet, DataPacket):
             self.acknowledge_packet(packet)
             Metrics.instance().drones_packets_to_depot.append((packet, self.time))
-            self.buffer.append(packet)
+            # self.buffer.append(packet)
             logger.debug(
                 f"Got packet with id {packet.identifier} from drone {packet.src}"
             )
