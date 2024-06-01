@@ -1,4 +1,5 @@
 import json
+import os
 import pathlib
 import pickle
 import time
@@ -209,7 +210,8 @@ def json_to_paths(json_file_path) -> dict[int, Path]:
     }
     """
     out_data = {}
-    with open(json_file_path, "r") as in_file:
+    base_path = os.path.join(os.path.dirname(__file__), "../..")
+    with open(os.path.join(base_path, json_file_path), "r") as in_file:
         data = json.load(in_file)
         for drone_data in data["drones"]:
             drone_index = int(drone_data["index"])

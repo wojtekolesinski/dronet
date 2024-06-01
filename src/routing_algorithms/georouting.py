@@ -14,7 +14,10 @@ class GeoRouting(BaseRouting):
         self, start: Point, target: Point, speed: int, time_diff: int
     ) -> Point:
         def f(x: float) -> float:
-            a = (target[1] - start[1]) / (target[0] - start[0])
+            try:
+                a = (target[1] - start[1]) / (target[0] - start[0])
+            except:
+                a = target[1] - start[1]
             b = start[1] - a * start[0]
             return a * x + b
 

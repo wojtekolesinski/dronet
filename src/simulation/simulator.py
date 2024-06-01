@@ -3,6 +3,7 @@ import time
 from collections import defaultdict
 
 import numpy as np
+import pygame
 from tqdm import tqdm
 
 import config
@@ -137,6 +138,18 @@ class Simulator:
                 "communication_error_type": str(self.communication_error_type),
             }
         )
+
+    def pause_sim(self):
+        def _space_pressed():
+            events = pygame.event.get()
+            for ev in events:
+                if ev.type == pygame.KEYDOWN and ev.key == pygame.K_SPACE:
+                    return True
+            return False
+
+        if _space_pressed():
+            while not _space_pressed():
+                time.sleep(0.1)
 
     def __set_random_generators(self):
         if self.seed is not None:
@@ -311,6 +324,7 @@ class Simulator:
                 self.increase_meetings_probs(self.drones, cur_step)
 
             if self.show_plot or config.SAVE_PLOT:
+                self.pause_sim()
                 self.__plot(cur_step)
 
         if config.DEBUG:

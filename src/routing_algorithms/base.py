@@ -34,6 +34,9 @@ class NeighbourNode:
 
 
 class BaseRouting(metaclass=abc.ABCMeta):
+    drone: CommunicatingEntity
+    retransmission_count: int
+    neighbours: dict[NetAddr, NeighbourNode]
 
     def __init__(self, drone: CommunicatingEntity):
         """The drone that is doing routing and simulator object."""
@@ -89,7 +92,6 @@ class BaseRouting(metaclass=abc.ABCMeta):
                 to_delete.append(neighbour.address)
         for n in to_delete:
             del self.neighbours[n]
-            print(f"deleting neighbour: {n}")
 
     def routing_control(self, cur_step: int) -> list[Packet]:
         self.update_neighbours(cur_step)

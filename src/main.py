@@ -8,10 +8,6 @@ logger = logging.getLogger(__name__)
 
 def main():
     """the place where to run simulations and experiments."""
-    import os
-
-    # os.chdir("..")
-
     logger.info("Initiating the simulator")
     sim = (
         Simulator()

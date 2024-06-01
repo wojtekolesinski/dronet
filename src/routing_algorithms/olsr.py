@@ -313,15 +313,18 @@ class OLSRRouting(BaseRouting):
                         destination_address=n.address, next_address=n.address, dist=1
                     )
                 )
+        if len(self.routing_table) == 0:
+            return
 
         for n in self.two_hop_neighbours.values():
-            self.routing_table.add(
-                RouteTuple(
-                    destination_address=n.two_hop_address,
-                    next_address=n.address,
-                    dist=2,
+            if self.neighbours[n.address].status == "sym":
+                self.routing_table.add(
+                    RouteTuple(
+                        destination_address=n.two_hop_address,
+                        next_address=n.address,
+                        dist=2,
+                    )
                 )
-            )
 
         dist = 2
         visited = {}
@@ -359,6 +362,13 @@ class OLSRRouting(BaseRouting):
         for n in self.neighbours.values():
             if self.get_neighbour_type(n.address) == "SYM_NEIGH":
                 self.mprs.add(n.address)
+
+    def has_neigbhbours(self) -> bool:
+        for n in self.neighbours.values():
+            if n.status == "sym":
+                return True
+
+        return False
 
     def update_neighbours(self, cur_step: int):
 
