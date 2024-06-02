@@ -38,7 +38,9 @@ class RRepPacket(Packet, AODVPacket):
     TYPE = 2
     hop_count: int
     lifetime: int
+    dst_addr: NetAddr
     dst_seq: int
+    org_addr: NetAddr
 
     def __init__(
         self,
@@ -47,13 +49,17 @@ class RRepPacket(Packet, AODVPacket):
         timestamp: int,
         hop_count: int,
         lifetime: int,
+        dst_addr: NetAddr,
         dst_seq: int,
+        org_addr: NetAddr,
     ):
 
         super().__init__(source, destination, timestamp, None)
         self.hop_count = hop_count
         self.lifetime = lifetime
+        self.dst_addr = dst_addr
         self.dst_seq = dst_seq
+        self.org_addr = org_addr
 
 
 class RErrPacket(Packet, AODVPacket):

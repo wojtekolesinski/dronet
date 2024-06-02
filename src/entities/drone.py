@@ -35,8 +35,6 @@ class Drone(CommunicatingEntity):
         self.path = path
         self.residual_energy = config.drone_max_energy
 
-        # dynamic parameters
-        # used later to check if there is an event that is about to expire
         self.current_waypoint = 0
 
     def consume_packet(self, packet: Packet):
