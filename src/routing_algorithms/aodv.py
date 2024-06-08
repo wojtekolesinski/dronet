@@ -1,4 +1,5 @@
 import itertools
+import logging
 from dataclasses import dataclass
 from typing import Dict
 
@@ -9,18 +10,21 @@ from routing_algorithms.base import BaseRouting
 from src.entities.communicating_entity import CommunicatingEntity
 from utilities.types import NetAddr
 
+logger = logging.getLogger(__name__)
+
 # aodv specific constants
+ACTIVE_ROUTE_TIMEOUT = config.OLD_HELLO_PACKET
+ALLOWED_HELLO_LOSS = 2
+MY_ROUTE_TIMEOUT = 2 * ACTIVE_ROUTE_TIMEOUT
 NET_DIAMETER = config.n_drones // 3
 NODE_TRAVERSAL_TIME = 1
 NET_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * NET_DIAMETER
 PATH_DISCOVERY_TIME = 2 * NET_TRAVERSAL_TIME
-ACTIVE_ROUTE_TIMEOUT = config.OLD_HELLO_PACKET
-MY_ROUTE_TIMEOUT = 2 * ACTIVE_ROUTE_TIMEOUT
-TTL_START = 1
-TTL_INCREMENT = 2
-TTL_THRESHOLD = 7
 RING_TRAVERSAL_TIME = 2 * NODE_TRAVERSAL_TIME * 1
-ALLOWED_HELLO_LOSS = 2
+RREQ_RETRIES = 2
+TTL_INCREMENT = 2
+TTL_START = 1
+TTL_THRESHOLD = 7
 
 
 @dataclass
@@ -32,7 +36,7 @@ class RoutingTableEntry:
     hop_count: int
     next_hop: NetAddr
     expiry_time: int
-    precursors: list = []
+    precursors: list[NetAddr] = []
     is_repairable: bool = False
     is_being_repaired: bool = False
 
@@ -41,14 +45,14 @@ class RoutingTableEntry:
 class RReqInfo:
     time: int
     ttl: int
-    retry_count: int
+    retry_count: int  # retries after max ttl has been reached
     backoff: int
 
 
 class AODVRouting(BaseRouting):
-    routing_table: Dict[NetAddr, RoutingTableEntry]
-    pending_rreq_buffer: Dict[NetAddr, RReqInfo]
-    received_rreqs = Dict[tuple[NetAddr, int], int]
+    routing_table: dict[NetAddr, RoutingTableEntry]
+    pending_rreq_buffer: dict[NetAddr, RReqInfo]
+    received_rreqs: dict[tuple[NetAddr, int], int]
     sequence_number: int
 
     def __init__(self, drone: CommunicatingEntity):
@@ -113,7 +117,7 @@ class AODVRouting(BaseRouting):
         last_hop = packet.src_relay
         self._update_route(last_hop, hop_count=1, next_hop=last_hop)
 
-        rreq_key: tuple[NetAddr, int] = (packet.src, packet.rreq_id)
+        rreq_key = (packet.src, packet.rreq_id)
         if (timestamp := self.received_rreqs.get(rreq_key)) is not None:
             if timestamp + PATH_DISCOVERY_TIME > self.drone.time:
                 return
@@ -192,8 +196,7 @@ class AODVRouting(BaseRouting):
         if dst_addr == self.drone.address:
             if packet.dst_seq is not None:
                 assert packet.dst_seq <= self.sequence_number + 1
-                if packet.dst_seq == self.sequence_number + 1:
-                    self.sequence_number += 1
+                self.sequence_number = max(packet.dst_seq, self.sequence_number)
 
             hop_count = 0
             dst_seq = self.sequence_number
@@ -234,27 +237,58 @@ class AODVRouting(BaseRouting):
         self.drone.buffer.append(grat_rrep)
 
     def _request_route(self, dest: NetAddr):
-        # TODO: route requests registry
-        #        - keep track of requests, current ttl and backoff time
         rreq_info = self.pending_rreq_buffer.get(dest)
-        if rreq_info is None:
-            # TODO: increment sequence number (6.1)
-            ...
-            # rreq_info = RReqInfo(
-            #     self.drone.time,
-            #     1,
-            #     0,
-            # )
 
-        packet = aodv.RReqPacket
-        pass
+        if rreq_info is not None:  # route already requested
+            # backoff not complete
+            if rreq_info.time + rreq_info.backoff >= self.drone.time:
+                return
+
+            if rreq_info.ttl < TTL_THRESHOLD:
+                rreq_info.time = self.drone.time
+                rreq_info.backoff *= 2
+            elif rreq_info.retry_count < RREQ_RETRIES:
+                rreq_info.retry_count += 1
+            else:
+                self._route_timeout(dest)
+                return
+        else:
+            rreq_info = RReqInfo(
+                time=self.drone.time,
+                ttl=TTL_START,
+                retry_count=0,
+                backoff=NET_TRAVERSAL_TIME,
+            )
+
+        self.sequence_number += 1
+        packet = aodv.RReqPacket(
+            source=self.drone.address,
+            destination=config.BROADCAST_ADDRESS,
+            timestamp=self.drone.time,
+            rreq_id=next(self.rreq_id),
+            hop_count=0,
+            dst_addr=dest,
+            org_seq=self.sequence_number,
+        )
+        self.drone.output_buffer.append(packet)
 
     def relay_selection(self, packet: Packet) -> NetAddr | None:
         route_info = self.routing_table.get(packet.dst)
-        if route_info is not None and route_info.expiry_time > self.drone.time:
-            # TODO: prolong lifetime for source, destination and next hop
+        if route_info is not None and route_info.is_valid:
+            routes_to_extend = [
+                route_info,  # destination
+                self.routing_table.get(route_info.hop_count),  # next hop
+                self.routing_table.get(packet.src),  # source
+            ]
+            for r in routes_to_extend:
+                if r is not None:
+                    r.expiry_time = max(
+                        r.expiry_time, self.drone.time + ACTIVE_ROUTE_TIMEOUT
+                    )
+
             return route_info.next_hop
 
+        # TODO: if received a data packet to retransmit, transmit rerr
         self._request_route(packet.dst)
         return None
 
@@ -276,15 +310,45 @@ class AODVRouting(BaseRouting):
         return packet  # type: ignore
 
     def routing_control(self, cur_step: int) -> list[Packet]:
-        self._clean()
+        rerr = self._clean()
+        # TODO: do i need control from base class?
         return super().routing_control(cur_step)
 
-    def _clean(self):
+    def _clean(self) -> list[Packet]:
         # TODO: mark expired routes as invalid
+        newly_broken = []
+        for addr, route in self.routing_table.items():
+            if self.drone.time > route.expiry_time:
+                if route.is_valid:
+                    newly_broken.append(addr)
+                route.is_valid = False
+
         # TODO: send RErr for each expired route
-        # TODO: check buffered packets for valid routes
+        # increment sequence number for route and all predecessors
+        unreachable = set()
+        while newly_broken:
+            current = newly_broken.pop()
+            for r in self.routing_table.values():
+                pass
+
         # TODO: cleanup received_rreqs
+        for key, timestamp in self.received_rreqs.items():
+            if timestamp:
+                ...
+
         pass
+
+    def _route_timeout(self, destination: NetAddr):
+        to_drop = []
+        logger.debug(f"Route timeout for destination {destination}")
+        for packet in self.drone.buffer:
+            if packet.dst == destination:
+                to_drop.append(packet.identifier)
+        logger.debug(f"Dropping {len(to_drop)} packets")
+
+        self.drone.buffer = [
+            p for p in self.drone.buffer if p.identifier not in to_drop
+        ]
 
     def has_neighbours(self) -> bool:
         return True

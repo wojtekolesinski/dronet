@@ -64,6 +64,17 @@ class RRepPacket(Packet, AODVPacket):
 
 class RErrPacket(Packet, AODVPacket):
     TYPE = 3
+    destinations: list[tuple[NetAddr, int]]
+
+    def __init__(
+        self,
+        source: NetAddr,
+        destination: NetAddr,
+        timestamp: int,
+        destinations: list[tuple[NetAddr, int]],
+    ):
+        super().__init__(source, destination, timestamp, None)
+        self.destinations = destinations
 
 
 class RRepAckPacket(Packet, AODVPacket):
