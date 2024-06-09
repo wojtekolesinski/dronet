@@ -9,9 +9,8 @@ logger = logging.getLogger(__name__)
 def main():
     """the place where to run simulations and experiments."""
     logger.info("Initiating the simulator")
-    sim = (
-        Simulator()
-    )  # empty constructor means that all the parameters of the simulation are taken from utilities.config.py
+    # empty constructor means that all the parameters of the simulation are taken from utilities.config.py
+    sim = Simulator()
     logger.info("Running the simulation")
     sim.run()  # run the simulation
     sim.close()

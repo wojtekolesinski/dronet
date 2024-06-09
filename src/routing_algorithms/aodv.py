@@ -1,13 +1,12 @@
 import itertools
 import logging
-from dataclasses import dataclass
-from typing import Dict
+from dataclasses import dataclass, field
 
 import config
+from entities.communicating_entity import CommunicatingEntity
 from entities.packets import aodv
 from entities.packets.base import HelloPacket, Packet
 from routing_algorithms.base import BaseRouting
-from src.entities.communicating_entity import CommunicatingEntity
 from utilities.types import NetAddr
 
 logger = logging.getLogger(__name__)
@@ -15,6 +14,7 @@ logger = logging.getLogger(__name__)
 # aodv specific constants
 ACTIVE_ROUTE_TIMEOUT = config.OLD_HELLO_PACKET
 ALLOWED_HELLO_LOSS = 2
+DELETE_PERIOD = ALLOWED_HELLO_LOSS * config.HELLO_DELAY
 MY_ROUTE_TIMEOUT = 2 * ACTIVE_ROUTE_TIMEOUT
 NET_DIAMETER = config.n_drones // 3
 NODE_TRAVERSAL_TIME = 1
@@ -36,7 +36,7 @@ class RoutingTableEntry:
     hop_count: int
     next_hop: NetAddr
     expiry_time: int
-    precursors: list[NetAddr] = []
+    precursors: list[NetAddr] = field(default_factory=list)
     is_repairable: bool = False
     is_being_repaired: bool = False
 
@@ -78,6 +78,9 @@ class AODVRouting(BaseRouting):
         if isinstance(packet, aodv.RRepPacket):
             return self._process_rrep(packet)
 
+        if isinstance(packet, aodv.RErrPacket):
+            return self._process_rerr(packet)
+
     def _update_route(
         self,
         addr: NetAddr,
@@ -98,6 +101,7 @@ class AODVRouting(BaseRouting):
                 expiry_time=self.drone.time + lifetime,
             )
             self.routing_table[addr] = route
+            logger.debug(f"new route with lifetime: {lifetime}")
         else:
             should_update = (
                 not route.seq_number_valid
@@ -189,6 +193,39 @@ class AODVRouting(BaseRouting):
         route.precursors.append(route_to_org.next_hop)
         self.routing_table[route.next_hop].precursors.append(route_to_org.next_hop)
         packet.dst_relay = route_to_org.next_hop
+        self.drone.output_buffer.append(packet)
+
+    def _process_rerr(self, packet: aodv.RErrPacket):
+        unreachable: list[tuple[NetAddr, int | None]] = []
+        for addr, seq in packet.destinations:
+            route = self.routing_table.get(addr)
+            if route is not None and route.next_hop == packet.src:
+                unreachable.append((addr, seq))
+
+        if unreachable:
+            self._generate_rerr(unreachable)
+
+    def _generate_rerr(self, destinations: list[tuple[NetAddr, int | None]]):
+        breakpoint()
+        new_destinations = []
+        for dest, seq in destinations:
+            route = self.routing_table[dest]
+            if seq:
+                route.seq_number = seq
+            else:
+                if route.seq_number_valid:
+                    route.seq_number += 1
+
+            route.is_valid = False
+            route.expiry_time = self.drone.time + DELETE_PERIOD
+            new_destinations.append((dest, route.seq_number))
+
+        packet = aodv.RErrPacket(
+            source=self.drone.address,
+            destination=config.BROADCAST_ADDRESS,
+            timestamp=self.drone.time,
+            destinations=new_destinations,
+        )
         self.drone.output_buffer.append(packet)
 
     def _generate_rrep(self, packet: aodv.RReqPacket):
@@ -288,8 +325,10 @@ class AODVRouting(BaseRouting):
 
             return route_info.next_hop
 
-        # TODO: if received a data packet to retransmit, transmit rerr
-        self._request_route(packet.dst)
+        if packet.src == self.drone.address:
+            self._request_route(packet.dst)
+        else:
+            self._generate_rerr([(packet.dst, None)])
         return None
 
     def drone_identification(self, cur_step: int) -> HelloPacket | None:
@@ -310,33 +349,48 @@ class AODVRouting(BaseRouting):
         return packet  # type: ignore
 
     def routing_control(self, cur_step: int) -> list[Packet]:
-        rerr = self._clean()
-        # TODO: do i need control from base class?
+        self._clean()
         return super().routing_control(cur_step)
 
-    def _clean(self) -> list[Packet]:
-        # TODO: mark expired routes as invalid
+    def _clean(self):
+        # do not clean to often
+        if (self.drone.time + 2) % 10 != 0:
+            return
+        # find newly expired routes and delete old ones
         newly_broken = []
+        to_delete = []
         for addr, route in self.routing_table.items():
             if self.drone.time > route.expiry_time:
                 if route.is_valid:
                     newly_broken.append(addr)
-                route.is_valid = False
+                else:
+                    to_delete.append(addr)
 
-        # TODO: send RErr for each expired route
-        # increment sequence number for route and all predecessors
+                route.is_valid = False
+        for addr in to_delete:
+            del self.routing_table[addr]
+
         unreachable = set()
         while newly_broken:
             current = newly_broken.pop()
-            for r in self.routing_table.values():
-                pass
+            unreachable.add(current)
+            for addr, route in self.routing_table.items():
+                if route.next_hop == current and route.next_hop not in unreachable:
+                    newly_broken.append(addr)
 
-        # TODO: cleanup received_rreqs
+        destinations: list[tuple[NetAddr, int | None]] = [
+            (addr, None) for addr in unreachable
+        ]
+        if destinations:
+            self._generate_rerr(destinations)
+
+        to_delete = []
         for key, timestamp in self.received_rreqs.items():
-            if timestamp:
-                ...
+            if timestamp + PATH_DISCOVERY_TIME < self.drone.time:
+                to_delete.append(key)
 
-        pass
+        for key in to_delete:
+            del self.received_rreqs[key]
 
     def _route_timeout(self, destination: NetAddr):
         to_drop = []

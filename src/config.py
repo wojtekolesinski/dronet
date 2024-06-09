@@ -1,10 +1,4 @@
-from enum import Enum
-
 from routing_algorithms.base import NeighbourNode
-from routing_algorithms.georouting import GeoRouting
-from routing_algorithms.olsr import OLSRRouting
-from routing_algorithms.q_learning_routing import QLearningRouting
-from routing_algorithms.random_routing import RandomRouting
 from utilities.types import NetAddr, Point
 
 """
@@ -34,8 +28,8 @@ PATH_FROM_JSON = (
 )
 # otherwise path are generated online
 JSONS_PATH_PREFIX = (
-    "data/tours/RANDOM_missions01.json"  # str: the path to the drones tours,
-    # "data/tours/test_routing_no_movement.json"  # str: the path to the drones tours,
+    # "data/tours/RANDOM_missions01.json"  # str: the path to the drones tours,
+    "data/tours/test_routing_no_movement.json"  # str: the path to the drones tours,
 )
 # the {} should be used to specify the seed -> es. data/tours/RANDOM_missions1.json for seed 1.
 RANDOM_STEPS = [
@@ -58,7 +52,7 @@ EXPERIMENTS_DIR = (
 )
 
 # drawaing
-show_plot = False  # bool: whether to plot or not the simulation.
+show_plot = True  # bool: whether to plot or not the simulation.
 WAIT_SIM_STEP = (
     0  # .1     # float: seconds, pauses the rendering for 'DELAY_PLOT' seconds.
 )
@@ -81,7 +75,7 @@ len_simulation = 18000  # int: steps of simulation. # ***
 time_step_duration = 0.150  # float: seconds duration of a step in seconds.
 seed = 10  # int: seed of this simulation.
 
-n_drones = 30  # int: number of drones. # ***
+n_drones = 10  # int: number of drones. # ***
 env_width = 1500  # int: meters, width of environment.
 env_height = 1500  # int: height of environment.
 
@@ -105,29 +99,7 @@ depot_coordinates = (750, 0)  # (int, int): coordinates of the depot.
 
 
 # ------------------------------- ROUTING PARAMS. ------------------------------- #
-class RoutingAlgorithm(Enum):
-    GEO = GeoRouting
-    RND = RandomRouting
-    QL = QLearningRouting
-    OLSR = OLSRRouting
 
-    @staticmethod
-    def keylist():
-        return list(map(lambda c: c.name, RoutingAlgorithm))
-
-
-class ChannelError(Enum):
-    UNIFORM = 1
-    GAUSSIAN = 2
-    NO_ERROR = 3
-
-    @staticmethod
-    def keylist():
-        return list(map(lambda c: c.name, ChannelError))
-
-
-routing_algorithm = RoutingAlgorithm.GEO
-communication_error_type = ChannelError.GAUSSIAN
 
 communication_success_prob: float = (
     1  # float: probability to have success in a communication.
@@ -171,3 +143,9 @@ DEPOT_NODE = NeighbourNode(
 # olsr
 vtime: int = 45
 duplicate_hold_time: int = 60
+
+
+from enums import ChannelError, RoutingAlgorithm
+
+routing_algorithm = RoutingAlgorithm.AODV
+communication_error_type = ChannelError.GAUSSIAN

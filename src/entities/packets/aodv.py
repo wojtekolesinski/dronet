@@ -1,6 +1,6 @@
+from entities.event import Event
 from entities.packets import Packet
-from src.entities.event import Event
-from src.utilities.types import NetAddr
+from utilities.types import NetAddr
 
 
 class AODVPacket:
