@@ -1,12 +1,18 @@
+import logging
+import sys
+
 import config
 from entities.communicating_entity import CommunicatingEntity
 from entities.depot import Depot
 from entities.event import Event
 from entities.packets import Packet
+from entities.packets.base import ACKPacket, DataPacket
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
 from utilities import utilities
 from utilities.types import NetAddr, Path, Point
+
+logger = logging.getLogger(__name__)
 
 
 class Drone(CommunicatingEntity):
@@ -61,7 +67,8 @@ class Drone(CommunicatingEntity):
         ev = Event(self.coords, cur_step)  # the event
         packet = self.router.make_data_packet(ev, cur_step)
         self.buffer.append(packet)
-        print(f"NEW PACKET WITH ID {packet.identifier}")
+        if config.DEBUG:
+            print(f"NEW PACKET WITH ID {packet.identifier} in drone {self.address}")
         Metrics.instance().all_data_packets_in_simulation += 1
 
     def routing(self):
@@ -74,6 +81,14 @@ class Drone(CommunicatingEntity):
             for packet in self.all_packets():
                 if p := self.router.route_packet(packet):
                     routed_packets.append(p)
+                elif isinstance(packet, DataPacket):
+                    # if we cannot route the data packet, let's try to do it next time
+                    # packet.timestamp += 1
+                    pass
+        if self.address == 3 and any(
+            map(lambda x: isinstance(x, ACKPacket), self.all_packets())
+        ):
+            print("DRONE 3", routed_packets)
         self.output_buffer.extend(routed_packets)
 
     def move(self, time: int):
@@ -139,3 +154,10 @@ class Drone(CommunicatingEntity):
 
     def __hash__(self):
         return hash(self.identifier)
+
+    def log_self(self):
+        pass
+        # logger.debug(
+        #     f"Drone<id={self.identifier}, buffer_size={len(self.buffer)}, output_buffer size={len(self.output_buffer)}>"
+        # )
+        # self.router.log_size()

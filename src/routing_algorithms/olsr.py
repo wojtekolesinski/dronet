@@ -7,16 +7,10 @@ import config
 from entities.communicating_entity import CommunicatingEntity
 from entities.event import Event
 from entities.packets.base import DataPacket, HelloPacket, Packet
-from entities.packets.olsr import (
-    LinkCode,
-    LinkType,
-    NeighbourType,
-    OLSRACKPacket,
-    OLSRDataPacket,
-    OLSRHelloPacket,
-    OLSRPacket,
-    OLSRTopologyControlPacket,
-)
+from entities.packets.olsr import (LinkCode, LinkType, NeighbourType,
+                                   OLSRACKPacket, OLSRDataPacket,
+                                   OLSRHelloPacket, OLSRPacket,
+                                   OLSRTopologyControlPacket)
 from routing_algorithms.base import BaseRouting
 from utilities.types import NetAddr
 
@@ -418,7 +412,8 @@ class OLSRRouting(BaseRouting):
             routes.sort(key=lambda r: r.dist)
 
         if packet.dst not in lookup:
-            print(f"{self.drone.identifier}\tcannot find destination")
+            if config.DEBUG:
+                print(f"{self.drone.identifier}\tcannot find destination")
             return None
 
         next_hop = lookup[packet.dst][0]

@@ -56,13 +56,16 @@ class BaseRouting(metaclass=abc.ABCMeta):
         if packet.dst != self.drone.address:
             if self.should_forward(packet):
                 self.drone.retransmission_buffer.add(packet)
-                return
+            return
 
-        elif isinstance(packet, DataPacket):
-            self.drone.acknowledge_packet(packet)
-            self.drone.buffer.append(packet)
+        # elif isinstance(packet, DataPacket):
+        #     assert self.drone.address == 1
+        #     print(f"{self.drone.address} GOT PACKET ", packet)
+        #     self.drone.acknowledge_packet(packet)
+        #     self.drone.buffer.append(packet)
 
         elif isinstance(packet, ACKPacket):
+            print("Got ack packet", packet, self.drone.address)
             self.drone.remove_packets([packet.acked_packet_id])
             if self.drone.buffer_length() == 0:
                 self.retransmission_count = 0
@@ -128,3 +131,6 @@ class BaseRouting(metaclass=abc.ABCMeta):
         ack_packet.event_ref = packet.event_ref
         ack_packet.dst_relay = packet.src_relay
         return ack_packet
+
+    def log_size(self):
+        pass

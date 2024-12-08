@@ -1,6 +1,9 @@
+import logging
 import math
 import time
 from collections import defaultdict
+from datetime import datetime
+from typing import Any
 
 import numpy as np
 import pygame
@@ -21,6 +24,8 @@ This file contains the Simulation class. It allows to explicit all the relevant 
 as default all the parameters are set to be those in the config file. For extensive experimental campains, 
 you can initialize the Simulator with non default values. 
 """
+
+logger = logging.getLogger(__name__)
 
 
 class Simulator:
@@ -78,7 +83,7 @@ class Simulator:
         self.prob_size_cell = int(
             config.drone_communication_range * self.prob_size_cell_r
         )
-        self.cell_prob_map = defaultdict(lambda: [0, 0, 0])
+        self.cell_prob_map: dict[Any, list[int]] = defaultdict(lambda: [0, 0, 0])
 
         self.sim_save_file = config.SAVE_PLOT_DIR + self.__sim_name()
         self.path_to_depot = None
@@ -293,12 +298,24 @@ class Simulator:
         @return: None
         """
 
-        for cur_step in tqdm(range(self.len_simulation)):
+        start = datetime.now()
+        # logger.setLevel(logging.INFO)
+
+        def log_elapsed(_name):
+            nonlocal start
+            end = datetime.now()
+            logger.debug(f"Time elapsed for {_name}: {end - start}s")
+
+        for cur_step in tqdm(range(self.len_simulation), disable=True):
+            # for cur_step in tqdm(range(self.len_simulation)):
             self.handle_events_generation(cur_step)
 
             self.apply_for_each_drone(Drone.set_time, cur_step)
             self.depot.time = cur_step
 
+            # logger.info(
+            #     f"Network dispatcher packets: {self.network_dispatcher.packets.__len__()}"
+            # )
             self.apply_for_each_drone(Drone.listen)
             self.depot.listen()
             self.network_dispatcher.packets = []
@@ -310,9 +327,11 @@ class Simulator:
 
             self.apply_for_each_drone(Drone.send_packets)
             self.depot.send_packets()
+            self.depot.buffer = []
 
             self.apply_for_each_drone(Drone.move, self.time_step_duration)
-            # time.sleep(0.01)
+
+            # self.apply_for_each_drone(Drone.log_self)
 
             # for drone in self.drones:
             #     # 1. update expired packets on drone buffers
@@ -326,6 +345,11 @@ class Simulator:
             if self.show_plot or config.SAVE_PLOT:
                 self.pause_sim()
                 self.__plot(cur_step)
+
+            # log step time
+            if cur_step % 500 == 0:
+                log_elapsed(f"step {cur_step}")
+            start = datetime.now()
 
         if config.DEBUG:
             print(

@@ -6,6 +6,7 @@ from scipy.stats import norm
 import config
 import utilities.utilities as util
 from entities.packets import Packet
+from entities.packets.base import DataPacket
 from simulation.metrics import Metrics
 from utilities.types import NetAddr, Point
 
@@ -23,6 +24,9 @@ class MediumDispatcher:
         if packet.src == packet.dst_relay:
             return
         self.packets.append((packet, pos, communication_range))
+        if not isinstance(packet, DataPacket):
+            self.metric_class.all_control_packets_in_simulation += 1
+            self.metric_class.control_packets_distribution[type(packet)] += 1
 
     def channel_success(self, drones_distance, no_error=False) -> bool:
         """
@@ -54,6 +58,7 @@ class MediumDispatcher:
                 continue
             if (
                 packet.dst_relay != address
+                and packet.dst != address
                 and packet.dst_relay != config.BROADCAST_ADDRESS
             ):
                 continue

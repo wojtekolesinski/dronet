@@ -30,6 +30,7 @@ class Metrics:
         # all packets in the simulation
         self.all_control_packets_in_simulation = 0
         self.all_data_packets_in_simulation = 0
+        self.control_packets_distribution = defaultdict(int)
 
         # all the events generated during the simulation
         self.events = set()
@@ -131,15 +132,18 @@ class Metrics:
             self.all_control_packets_in_simulation,
         )
         print(
+            "Control packets distribution: ",
+            self.control_packets_distribution,
+        )
+        print(
             "Data packets generated during simulation: ",
             self.all_data_packets_in_simulation,
         )
-        print("Number of packets to depot: ", len(self.drones_packets_to_depot))
+        print("Number of packets to depot: ", len(self.drones_packets))
         print("Packet mean delivery time (seconds): ", self.packet_mean_delivery_time)
         print(
             "Packet delivery ratio: ",
-            len(self.drones_packets_to_depot_list)
-            / self.all_data_packets_in_simulation,
+            len(self.drones_packets) / self.all_data_packets_in_simulation,
         )
 
     def info_mission(self, mission_setup):

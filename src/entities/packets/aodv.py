@@ -33,6 +33,9 @@ class RReqPacket(Packet, AODVPacket):
         self.dst_seq = dst_seq
         self.org_seq = org_seq
 
+    def __str__(self):
+        return super().__str__()[:-1] + f", {self.dst_addr=}>"
+
 
 class RRepPacket(Packet, AODVPacket):
     TYPE = 2

@@ -140,7 +140,7 @@ class PathPlanningDrawer:
         stddraw.text(
             depot.coords[0],
             depot.coords[1] + 100,
-            "pk: " + str(len(depot.buffer)),
+            "pk: " + str(len(depot.depot_buffer)),
         )
 
     def __draw_sensing_range(self, body):

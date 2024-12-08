@@ -28,7 +28,7 @@ class Packet(Entity):
         as for now, every packet is an event."""
 
         event_ref_crafted = (
-            event_ref if event_ref is not None else Event((-1, -1), -1)
+            event_ref if event_ref is not None else Event((-1, -1), timestamp)
         )  # default event if packet is not associated to the event
 
         # id(self) is the id of this instance (unique for every new created packet),
@@ -68,15 +68,7 @@ class Packet(Entity):
 
     def __repr__(self):
         packet_type = str(self.__class__).split(".")[-1].split("'")[0]
-        return (
-            packet_type
-            + "id:"
-            + str(self.identifier)
-            + " event id: "
-            + str(self.event_ref.identifier)
-            + " c:"
-            + str(self.coords)
-        )
+        return f"{packet_type} <src={self.src}, dst={self.dst}, src_relay={self.src_relay}, dst_relay={self.dst_relay}, id={str(self.identifier)}, c={str(self.coords)}, {self.ttl=}>"
 
 
 class DataPacket(Packet):
@@ -95,6 +87,9 @@ class DataPacket(Packet):
 
 
 class ACKPacket(Packet):
+
+    acked_packet_id: int
+
     def __init__(
         self,
         source: NetAddr,
@@ -111,6 +106,10 @@ class ACKPacket(Packet):
 
 class HelloPacket(Packet):
     """The hello message is responsible to give info about neighborhood"""
+
+    cur_pos: Point
+    speed: int
+    next_target: Point
 
     def __init__(
         self,

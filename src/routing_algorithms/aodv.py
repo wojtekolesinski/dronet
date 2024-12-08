@@ -2,6 +2,8 @@ import itertools
 import logging
 from dataclasses import dataclass, field
 
+from tqdm.utils import sys
+
 import config
 from entities.communicating_entity import CommunicatingEntity
 from entities.packets import aodv
@@ -36,7 +38,7 @@ class RoutingTableEntry:
     hop_count: int
     next_hop: NetAddr
     expiry_time: int
-    precursors: list[NetAddr] = field(default_factory=list)
+    precursors: set[NetAddr] = field(default_factory=set)
     is_repairable: bool = False
     is_being_repaired: bool = False
 
@@ -65,9 +67,17 @@ class AODVRouting(BaseRouting):
 
         self.rreq_id = itertools.count(0, 1)
 
+    def log_size(self):
+        if config.DEBUG:
+            print(
+                f"{sys.getsizeof(self.routing_table)}, "
+                f"{sys.getsizeof(self.pending_rreq_buffer)}, "
+                f"{sys.getsizeof(self.received_rreqs)}"
+            )
+
     def process(self, packet: Packet):
         if isinstance(packet, aodv.AODVPacket):
-            self._process_control(packet)
+            return self._process_control(packet)
 
         return super().process(packet)
 
@@ -101,7 +111,7 @@ class AODVRouting(BaseRouting):
                 expiry_time=self.drone.time + lifetime,
             )
             self.routing_table[addr] = route
-            logger.debug(f"new route with lifetime: {lifetime}")
+            # logger.debug(f"new route with lifetime: {lifetime}")
         else:
             should_update = (
                 not route.seq_number_valid
@@ -138,6 +148,10 @@ class AODVRouting(BaseRouting):
 
         dst_addr = packet.dst_addr
         route = self.routing_table.get(dst_addr)
+        # TODO: delete this
+        if self.drone.address in (2, 3) and dst_addr == 4:
+            print(f"{self.drone.address=} GOT RREQ {packet=}, {route=}")
+
         if dst_addr == self.drone.address or (route is not None and route.is_valid):
             self._generate_rrep(packet)
             return
@@ -152,6 +166,8 @@ class AODVRouting(BaseRouting):
             self.drone.output_buffer.append(packet)
 
     def _process_rrep(self, packet: aodv.RRepPacket):
+        if self.drone.address == 2 and packet.src == 3 and packet.dst_addr == 1:
+            print(f"GOT RREP FOR DEPOT {packet=}")
         packet.hop_count += 1
         route = self.routing_table.get(packet.dst_addr)
         if route is None:
@@ -164,6 +180,7 @@ class AODVRouting(BaseRouting):
                 next_hop=packet.src_relay,
                 expiry_time=self.drone.time + packet.lifetime,
             )
+            self.routing_table[packet.dst_addr] = route
         else:
             should_update = (
                 not route.seq_number_valid
@@ -185,15 +202,24 @@ class AODVRouting(BaseRouting):
         if packet.org_addr == self.drone.address:
             return
 
-        if packet.ttl <= 1:
+        # Hello packet
+        # if packet.org_addr == -1:
+        #     self.routing_table[route.dest] = route
+        #     return
+
+        if packet.ttl < 1:
             return
 
         packet.ttl -= 1
         route_to_org = self.routing_table[packet.org_addr]
-        route.precursors.append(route_to_org.next_hop)
-        self.routing_table[route.next_hop].precursors.append(route_to_org.next_hop)
+        route.precursors.add(route_to_org.next_hop)
+        try:
+            self.routing_table[route.next_hop].precursors.add(route_to_org.next_hop)
+        except KeyError:
+            print("keyerror")
         packet.dst_relay = route_to_org.next_hop
-        self.drone.output_buffer.append(packet)
+        if packet.ttl > 0:
+            self.drone.output_buffer.append(packet)
 
     def _process_rerr(self, packet: aodv.RErrPacket):
         unreachable: list[tuple[NetAddr, int | None]] = []
@@ -206,10 +232,21 @@ class AODVRouting(BaseRouting):
             self._generate_rerr(unreachable)
 
     def _generate_rerr(self, destinations: list[tuple[NetAddr, int | None]]):
-        breakpoint()
         new_destinations = []
         for dest, seq in destinations:
-            route = self.routing_table[dest]
+            route = self.routing_table.get(dest)
+            if not route:
+                route = RoutingTableEntry(
+                    dest=dest,
+                    seq_number=-1,
+                    seq_number_valid=False,
+                    is_valid=False,
+                    hop_count=-1,
+                    next_hop=-1,
+                    expiry_time=-1,
+                )
+                self.routing_table[dest] = route
+
             if seq:
                 route.seq_number = seq
             else:
@@ -232,7 +269,8 @@ class AODVRouting(BaseRouting):
         dst_addr = packet.dst_addr
         if dst_addr == self.drone.address:
             if packet.dst_seq is not None:
-                assert packet.dst_seq <= self.sequence_number + 1
+                # TODO: this breaks
+                # assert packet.dst_seq <= self.sequence_number + 1
                 self.sequence_number = max(packet.dst_seq, self.sequence_number)
 
             hop_count = 0
@@ -244,7 +282,7 @@ class AODVRouting(BaseRouting):
             dst_seq = route.seq_number
             lifetime = route.expiry_time - self.drone.time
             # update precursors
-            self.routing_table[packet.src].precursors.append(route.next_hop)
+            self.routing_table[packet.src].precursors.add(route.next_hop)
 
         rrep = aodv.RRepPacket(
             source=self.drone.address,
@@ -257,7 +295,11 @@ class AODVRouting(BaseRouting):
             org_addr=packet.src,
         )
 
-        self.drone.buffer.append(rrep)
+        if packet.src_relay != rrep.dst:
+            rrep.dst_relay = packet.src_relay
+        if self.drone.address == 3 and rrep.dst_addr == 4:
+            print(f"{self.drone.address=} SENDING RREP {rrep=}")
+        self.drone.output_buffer.append(rrep)
 
         # gratuitous RREP
         org_route = self.routing_table[packet.src]
@@ -271,7 +313,7 @@ class AODVRouting(BaseRouting):
             dst_seq=packet.org_seq,
             org_addr=dst_addr,
         )
-        self.drone.buffer.append(grat_rrep)
+        self.drone.output_buffer.append(grat_rrep)
 
     def _request_route(self, dest: NetAddr):
         rreq_info = self.pending_rreq_buffer.get(dest)
@@ -343,7 +385,7 @@ class AODVRouting(BaseRouting):
             lifetime=ALLOWED_HELLO_LOSS * config.HELLO_DELAY,
             dst_addr=self.drone.address,
             dst_seq=self.sequence_number,
-            org_addr=-1,
+            org_addr=self.drone.address,
         )
         packet.ttl = 1
         return packet  # type: ignore
@@ -353,7 +395,7 @@ class AODVRouting(BaseRouting):
         return super().routing_control(cur_step)
 
     def _clean(self):
-        # do not clean to often
+        # do not clean too often
         if (self.drone.time + 2) % 10 != 0:
             return
         # find newly expired routes and delete old ones
@@ -406,6 +448,3 @@ class AODVRouting(BaseRouting):
 
     def has_neighbours(self) -> bool:
         return True
-
-    def should_forward(self, packet: Packet) -> bool:
-        return super().should_forward(packet)

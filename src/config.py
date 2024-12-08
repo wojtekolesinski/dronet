@@ -51,7 +51,7 @@ EXPERIMENTS_DIR = (
     "data/evaluation_tests/"  # output data : the results of the simulation
 )
 
-# drawaing
+# drawing
 show_plot = True  # bool: whether to plot or not the simulation.
 WAIT_SIM_STEP = (
     0  # .1     # float: seconds, pauses the rendering for 'DELAY_PLOT' seconds.
@@ -71,17 +71,18 @@ SAVE_PLOT_DIR = "data/plots/"
 # add constants here...
 
 # ----------------------------- SIMULATION PARAMS. ---------------------------- #
-len_simulation = 18000  # int: steps of simulation. # ***
+len_simulation = 10000  # int: steps of simulation. # ***
 time_step_duration = 0.150  # float: seconds duration of a step in seconds.
 seed = 10  # int: seed of this simulation.
 
 n_drones = 10  # int: number of drones. # ***
+# n_drones = 50  # int: number of drones. # ***
 env_width = 1500  # int: meters, width of environment.
 env_height = 1500  # int: height of environment.
 
 # events
 event_duration = 1500  # SIM_DURATION  # int: steps, number of time steps that an event lasts  -> to seconds = step * step_duration.
-event_generation_delay = 65  # int: steps, a new packet is felt (generated on the drone) every 'D_FEEL_EVENT' steps. # ***
+event_generation_delay = 20  # int: steps, a new packet is felt (generated on the drone) every 'D_FEEL_EVENT' steps. # ***
 event_generation_prob = 0.8  # float: probability that the drones feels the event generated on the drone. # ***
 
 """ e.g. given D_FEEL_EVENT = 500, P_FEEL_EVENT = .5, every 500 steps with probability .5 the drone will feel an event."""
@@ -147,5 +148,5 @@ duplicate_hold_time: int = 60
 
 from enums import ChannelError, RoutingAlgorithm
 
-routing_algorithm = RoutingAlgorithm.AODV
+routing_algorithm = RoutingAlgorithm.OLSR
 communication_error_type = ChannelError.GAUSSIAN

@@ -1,8 +1,9 @@
 import abc
+from collections import defaultdict
 
 import config
 from entities.base import Entity
-from entities.packets import ACKPacket, Packet
+from entities.packets import ACKPacket, DataPacket, Packet
 from simulation.net import MediumDispatcher
 from utilities.types import NetAddr, Point
 
@@ -12,8 +13,12 @@ class CommunicatingEntity(Entity):
     network: MediumDispatcher
     sensing_range: int
     communication_range: int
+    buffer_size: int
     buffer: list[Packet]
     output_buffer: list[Packet]
+    retransmission_buffer: set[Packet]
+    time: int
+    speed: int
 
     def __init__(
         self,
@@ -54,28 +59,42 @@ class CommunicatingEntity(Entity):
     def next_target(self) -> Point:
         pass
 
-    @abc.abstractmethod
     def routing(self):
-        pass
+        """do the routing"""
+        packets = self.router.routing_control(self.time)
+        self.output_buffer.extend(packets)
+
+        routed_packets = []
+        if self.router.has_neighbours():
+            for packet in self.all_packets():
+                if p := self.router.route_packet(packet):
+                    routed_packets.append(p)
+                elif isinstance(packet, DataPacket):
+                    # if we cannot route the data packet, let's try to do it next time
+                    # packet.timestamp += 1
+                    pass
+        self.output_buffer.extend(routed_packets)
 
     def acknowledge_packet(self, packet: Packet):
         ack_packet = self.router.make_ack_packet(packet)
-        self.output_buffer.append(ack_packet)
+        # print("MADE ACK PACKET", ack_packet)
+        self.buffer.append(ack_packet)
 
     def set_time(self, timestamp: int):
         self.time = timestamp
 
     def empty_buffer(self):
-        """empty output buffer and remove packets from retransmission_buffer, that were routed successfully"""
-        for packet in self.output_buffer:
-            if packet in self.retransmission_buffer:
-                self.retransmission_buffer.remove(packet)
-        self.output_buffer = []
+        """empty output buffer and remove packets that were routed successfully from retransmission_buffer"""
+        # for packet in self.output_buffer:
+        #     if packet in self.retransmission_buffer:
+        #         self.retransmission_buffer.remove(packet)
+        self.retransmission_buffer.clear()
+        self.output_buffer.clear()
 
     def all_packets(self):
-        """return packets, that should be routed in this moment.
+        """return packets, that should be routed at this moment.
         This includes:
-        - packets from buffer, that were generated in this moment.
+        - packets from buffer, that were generated at this moment.
         - packets from buffer, that should be retransmitted
         - all packets from retransmission_buffer"""
         packets = []
@@ -96,14 +115,24 @@ class CommunicatingEntity(Entity):
     def is_full(self):
         return self.buffer_length() == self.buffer_size
 
-    def send_packets(self):
+    def send_packets(self, depot=False):
+        seen = set()
+        dups = 0
         for packet in self.output_buffer:
+            if packet.identifier in seen:
+                dups += 1
+                continue
+            seen.add(packet.identifier)
             packet.src_relay = self.address
+            if depot:
+                print(packet)
             self.network.send(packet, self.coords, self.communication_range)
         self.empty_buffer()
 
     def remove_packets(self, packet_ids: list[int]):
         """Removes the packets from the buffer."""
+        if not packet_ids:
+            return
         to_remove = []
         for packet in self.buffer:
             if packet.identifier in packet_ids:
@@ -116,4 +145,5 @@ class CommunicatingEntity(Entity):
                         + str(packet.identifier)
                     )
         for packet in to_remove:
+            print("Dropping packet", packet)
             self.buffer.remove(packet)
