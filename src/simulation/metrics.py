@@ -88,7 +88,7 @@ class Metrics:
         # DELIVERY TIME -> METRIC FOR PLOT
         for pck, delivery_ts in self.drones_packets_to_depot:
             # time between packet generation and packet delivery to depot
-            packet_delivery_times.append(delivery_ts - pck.timestamp)
+            packet_delivery_times.append(delivery_ts - pck.event_ref.current_time)
 
             # time between event generation and packet delivery to depot -> dict to help computation
             event_delivery_times_dict[pck.event_ref.identifier].append(
@@ -143,7 +143,7 @@ class Metrics:
         print("Packet mean delivery time (seconds): ", self.packet_mean_delivery_time)
         print(
             "Packet delivery ratio: ",
-            len(self.drones_packets) / self.all_data_packets_in_simulation,
+            self.number_of_events_to_depot / self.all_data_packets_in_simulation,
         )
 
     def info_mission(self, mission_setup):
@@ -156,6 +156,17 @@ class Metrics:
         self.mission_setup["time_on_active_routing"] = (
             str(self.time_on_active_routing),
         )
+
+    def dict_rep(self):
+        return {
+            "drones_count": self.mission_setup["n_drones"],
+            "seed": self.mission_setup["seed"],
+            "routing_algorithm": self.mission_setup["routing_algorithm"].split(".")[1],
+            "control_packets_count": self.all_control_packets_in_simulation,
+            "data_packets_count": self.all_data_packets_in_simulation,
+            "pdr": self.number_of_events_to_depot / self.all_data_packets_in_simulation,
+            "mean_delivery_time": self.packet_mean_delivery_time,
+        }
 
     def __dictionary_represenation(self):
         """compute the dictionary to save as json"""
@@ -218,6 +229,7 @@ class Metrics:
     def save_as_json(self, filename):
         """save all the metrics into a json file"""
         out = self.__dictionary_represenation()
+        out = self.dict_rep()
         js = json.dumps(out)
         f = open(filename, "w")
         f.write(js)

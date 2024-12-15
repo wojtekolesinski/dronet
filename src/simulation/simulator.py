@@ -169,6 +169,7 @@ class Simulator:
         self.path_manager = utilities.PathManager(
             config.PATH_FROM_JSON, config.JSONS_PATH_PREFIX, self.seed
         )
+        print(f"{config.JSONS_PATH_PREFIX=}")
         self.environment = Environment(self.env_width, self.env_height)
 
         self.depot = Depot(
@@ -304,7 +305,7 @@ class Simulator:
         def log_elapsed(_name):
             nonlocal start
             end = datetime.now()
-            logger.debug(f"Time elapsed for {_name}: {end - start}s")
+            # logger.debug(f"Time elapsed for {_name}: {end - start}s")
 
         for cur_step in tqdm(range(self.len_simulation), disable=True):
             # for cur_step in tqdm(range(self.len_simulation)):
@@ -365,6 +366,7 @@ class Simulator:
 
         self.print_metrics(plot_id="final")
         self.save_metrics(config.ROOT_EVALUATION_DATA + self.simulation_name)
+        Metrics._instance = None
 
     def print_metrics(self, plot_id="final"):
         """add signature"""

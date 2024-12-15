@@ -1,9 +1,36 @@
+import itertools
 import logging
+
+import tqdm
 
 from simulation.simulator import Simulator
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+
+def run_experiments():
+    import config
+    from enums import RoutingAlgorithm
+
+    algorithms = [
+        # RoutingAlgorithm.OLSR,
+        RoutingAlgorithm.AODV,
+        # RoutingAlgorithm.GEO,
+        # RoutingAlgorithm.RND,
+    ]
+    # algorithms = [RoutingAlgorithm.GEO]
+    n_drones = [5, 10, 15, 20, 30, 40]
+    seeds = [12, 23, 34, 45, 56]
+
+    for algorithm, drones, seed in tqdm.tqdm(
+        itertools.product(algorithms, n_drones, seeds)
+    ):
+        config.routing_algorithm = algorithm
+        sim = Simulator(seed=seed, n_drones=drones, routing_algorithm=algorithm)
+        logger.info("Running the simulation")
+        sim.run()  # run the simulation
+        sim.close()
 
 
 def main():
@@ -17,4 +44,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    run_experiments()

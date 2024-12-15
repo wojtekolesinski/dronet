@@ -1,8 +1,7 @@
 import itertools
 import logging
+import sys
 from dataclasses import dataclass, field
-
-from tqdm.utils import sys
 
 import config
 from entities.communicating_entity import CommunicatingEntity
@@ -211,9 +210,9 @@ class AODVRouting(BaseRouting):
             return
 
         packet.ttl -= 1
-        route_to_org = self.routing_table[packet.org_addr]
-        route.precursors.add(route_to_org.next_hop)
         try:
+            route_to_org = self.routing_table[packet.org_addr]
+            route.precursors.add(route_to_org.next_hop)
             self.routing_table[route.next_hop].precursors.add(route_to_org.next_hop)
         except KeyError:
             print("keyerror")
@@ -298,7 +297,8 @@ class AODVRouting(BaseRouting):
         if packet.src_relay != rrep.dst:
             rrep.dst_relay = packet.src_relay
         if self.drone.address == 3 and rrep.dst_addr == 4:
-            print(f"{self.drone.address=} SENDING RREP {rrep=}")
+            if config.DEBUG:
+                print(f"{self.drone.address=} SENDING RREP {rrep=}")
         self.drone.output_buffer.append(rrep)
 
         # gratuitous RREP

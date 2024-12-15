@@ -65,7 +65,7 @@ class BaseRouting(metaclass=abc.ABCMeta):
         #     self.drone.buffer.append(packet)
 
         elif isinstance(packet, ACKPacket):
-            print("Got ack packet", packet, self.drone.address)
+            # print("Got ack packet", packet, self.drone.address)
             self.drone.remove_packets([packet.acked_packet_id])
             if self.drone.buffer_length() == 0:
                 self.retransmission_count = 0

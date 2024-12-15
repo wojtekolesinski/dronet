@@ -4,6 +4,7 @@ import config
 from entities.communicating_entity import CommunicatingEntity
 from entities.packets import DataPacket, Packet
 from entities.packets.aodv import RRepPacket
+from entities.packets.olsr import OLSRDataPacket
 from simulation.metrics import Metrics
 from simulation.net import MediumDispatcher
 from utilities.types import NetAddr, Point
@@ -34,10 +35,10 @@ class Depot(CommunicatingEntity):
         self.depot_buffer = set()
 
     def consume_packet(self, packet: Packet):
-        if isinstance(packet, RRepPacket):
-            print(f"DEPOT - GOT RREP {packet=}")
+        # if isinstance(packet, RRepPacket):
+        #     print(f"DEPOT - GOT RREP {packet=}")
         self.router.process(packet)
-        if isinstance(packet, DataPacket):
+        if isinstance(packet, (DataPacket, OLSRDataPacket)):
             # print("GOT PACKET ", packet)
             self.acknowledge_packet(packet)
             Metrics.instance().drones_packets_to_depot.append((packet, self.time))

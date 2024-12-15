@@ -88,7 +88,8 @@ class Drone(CommunicatingEntity):
         if self.address == 3 and any(
             map(lambda x: isinstance(x, ACKPacket), self.all_packets())
         ):
-            print("DRONE 3", routed_packets)
+            if config.DEBUG:
+                print("DRONE 3", routed_packets)
         self.output_buffer.extend(routed_packets)
 
     def move(self, time: int):

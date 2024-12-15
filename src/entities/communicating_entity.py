@@ -124,8 +124,8 @@ class CommunicatingEntity(Entity):
                 continue
             seen.add(packet.identifier)
             packet.src_relay = self.address
-            if depot:
-                print(packet)
+            # if depot:
+            #     print("sending from depot: " + str(packet))
             self.network.send(packet, self.coords, self.communication_range)
         self.empty_buffer()
 
@@ -145,5 +145,5 @@ class CommunicatingEntity(Entity):
                         + str(packet.identifier)
                     )
         for packet in to_remove:
-            print("Dropping packet", packet)
+            # print("Dropping packet", packet)
             self.buffer.remove(packet)

@@ -17,4 +17,4 @@ class RandomRouting(BaseRouting):
         @param opt_neighbors: a list of tuples (hello_packet, drone)
         @return: a random drone as relay
         """
-        return self.filter_neighbours_for_packet(packet).pop()
+        return self.random.choice(list(self.neighbours.values()))
